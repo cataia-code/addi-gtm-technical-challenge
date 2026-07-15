@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -19,6 +18,7 @@ if str(ROOT) not in sys.path:
 
 from live_demo.email_listener import wait_for_reply_and_classify
 from src.db import repository
+from src.handoff.slack_service import post_handoff
 from src.outreach.email_service import send_email_d0
 from src.outreach.whatsapp_service import send_whatsapp
 
@@ -153,35 +153,19 @@ def post_final_slack(
     action_taken: str,
     timestamp: str,
 ) -> None:
-    payload = {
-        "text": "E2E real Addi Marketplace",
-        "blocks": [
-            {"type": "header", "text": {"type": "plain_text", "text": "E2E real - Addi Marketplace"}},
-            {
-                "type": "section",
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*Brand:*\n{brand.get('brand_id')}"},
-                    {"type": "mrkdwn", "text": f"*Categoria:*\n{brand.get('category')}"},
-                    {"type": "mrkdwn", "text": f"*GMV 12m:*\nCOP {brand.get('gmv_cop_millions_12m')} MM"},
-                    {"type": "mrkdwn", "text": f"*Score:*\n{brand.get('final_score')}"},
-                    {"type": "mrkdwn", "text": f"*Momentum:*\n{brand.get('gmv_90d_to_12m_ratio')}"},
-                    {"type": "mrkdwn", "text": f"*Timestamp:*\n{timestamp}"},
-                ],
-            },
-            {"type": "divider"},
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Reply exacto:*\n>{reply_text}"}},
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*Clasificacion JSON:*\n```{json.dumps(classification, ensure_ascii=False, indent=2)}```",
-                },
-            },
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Accion tomada:*\n{action_taken}"}},
-        ],
-    }
-    response = requests.post(os.environ["SLACK_WEBHOOK_URL"], json=payload, timeout=15)
-    response.raise_for_status()
+    reasoning_log = [
+        f"Clasificacion JSON: {json.dumps(classification, ensure_ascii=False)}",
+        "Fuente: Gmail reply listener / recovery E2E.",
+    ]
+    post_handoff(
+        brand,
+        classification,
+        reply_text,
+        reasoning_log,
+        dry_run=False,
+        action_taken=action_taken,
+        timestamp=timestamp,
+    )
 
 
 def reset_report() -> None:
