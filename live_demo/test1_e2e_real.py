@@ -90,8 +90,12 @@ def main() -> None:
         )
         twilio_called = wa_result.sent
         assert twilio_called, f"Twilio no confirmó envío: {wa_result.reason}"
-        action_taken = "WhatsApp real enviado + handoff Slack"
-        log_step(f"WhatsApp real enviado por Twilio. sid={wa_result.provider_response.get('sid') if wa_result.provider_response else 'N/A'}")
+        action_taken = "WhatsApp aceptado por Twilio + handoff Slack"
+        log_step(
+            "WhatsApp aceptado por Twilio. "
+            f"sid={wa_result.provider_response.get('sid') if wa_result.provider_response else 'N/A'} "
+            "Nota: en Sandbox, entrega final requiere que el destino haya enviado el join code correcto."
+        )
     elif decision == "nurture":
         action_taken = "Solo Slack nurture; WhatsApp no enviado"
         log_step("Nurture: no se llama Twilio.")

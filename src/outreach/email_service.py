@@ -7,6 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -28,8 +29,24 @@ def render_template(template: str, values: dict[str, Any]) -> str:
 
 def build_email_html(brand: dict[str, Any], reply_to: str) -> str:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    values = {**brand, "reply_to": reply_to}
+    values = {**brand, "reply_to": reply_to, "cta_mailto": build_cta_mailto(brand, reply_to)}
     return render_template(template, values)
+
+
+def build_cta_mailto(brand: dict[str, Any], reply_to: str) -> str:
+    subject = f"Re: Addi Marketplace - {brand.get('brand_id', '')}"
+    body = (
+        "Hola equipo Addi,\n\n"
+        "Sí me interesa revisar la oportunidad de Addi Marketplace.\n\n"
+        "Mis horarios sugeridos para una llamada de 20 minutos son:\n"
+        "- Opción 1: \n"
+        "- Opción 2: \n"
+        "- Opción 3: \n\n"
+        f"Contexto: {brand.get('brand_id', '')} | {brand.get('category', '')} | "
+        f"GMV 12m COP {brand.get('gmv_cop_millions_12m', '')} MM.\n\n"
+        "Saludos,"
+    )
+    return f"mailto:{quote(reply_to)}?subject={quote(subject)}&body={quote(body)}"
 
 
 def get_gmail_service(
@@ -75,4 +92,3 @@ def send_email_d0(
         return {"dry_run": True, "subject": subject, "to": to_email, "html": html}
     service = get_gmail_service()
     return service.users().messages().send(userId="me", body=message).execute()
-
