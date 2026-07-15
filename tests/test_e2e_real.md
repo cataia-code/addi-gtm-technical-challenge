@@ -19,3 +19,4 @@
 - `2026-07-15T17:21:10` Slack Block Kit final enviado. action_taken=WhatsApp en espanol enviado via Twilio SDK + handoff Slack
 - `2026-07-15T17:21:10` Recuperacion E2E completada.
 - `2026-07-15T17:31:00` Slack enriquecido reenviado con datos del cliente, correo, WhatsApp, reply completo y horarios detectados. decision=agendar intent_score=90
+- `2026-07-15T17:35:00` Slack compacto reenviado: accion, intent, tier, brand, correo, WhatsApp, categoria y reply. decision=agendar intent_score=90

@@ -18,10 +18,6 @@ def build_handoff_blocks(
     action_taken: str | None = None,
     timestamp: str | None = None,
 ) -> list[dict[str, Any]]:
-    log_text = "\n".join(f"- {line}" for line in (reasoning_log or [])) or "- Sin log"
-    meeting_times = extract_meeting_times(reply_text)
-    meeting_text = "\n".join(f"- {item}" for item in meeting_times) if meeting_times else "_No se detectaron horarios concretos._"
-
     return [
         {"type": "header", "text": {"type": "plain_text", "text": "Lead calificado - Addi Marketplace"}},
         {
@@ -29,39 +25,23 @@ def build_handoff_blocks(
             "text": {
                 "type": "mrkdwn",
                 "text": (
-                    f"*Accion recomendada:* `{classification.get('suggested_action', 'N/A')}`  |  "
-                    f"*Intent:* `{classification.get('intent_score', 'N/A')}`"
+                    f"*Accion:* `{classification.get('suggested_action', 'N/A')}`  |  "
+                    f"*Intent:* `{classification.get('intent_score', 'N/A')}`  |  "
+                    f"*Tier:* `{brand.get('tier', 'N/A')}`"
                 ),
             },
         },
         {
             "type": "section",
             "fields": [
-                {"type": "mrkdwn", "text": f"*Brand:*\n{brand.get('brand_id', '')}"},
-                {"type": "mrkdwn", "text": f"*Categoria:*\n{brand.get('category', '')}"},
+                {"type": "mrkdwn", "text": f"*Brand:*\n{brand.get('brand_id', 'N/A')}"},
                 {"type": "mrkdwn", "text": f"*Correo:*\n{brand.get('contacto_email', 'N/A')}"},
                 {"type": "mrkdwn", "text": f"*WhatsApp:*\n{brand.get('contacto_whatsapp', 'N/A')}"},
-                {"type": "mrkdwn", "text": f"*GMV 12m:*\nCOP {brand.get('gmv_cop_millions_12m', '')} MM"},
-                {"type": "mrkdwn", "text": f"*Tier:*\n{brand.get('tier', '')}"},
-                {"type": "mrkdwn", "text": f"*Score:*\n{brand.get('final_score', 'N/A')}"},
-                {"type": "mrkdwn", "text": f"*Momentum:*\n{brand.get('gmv_90d_to_12m_ratio', 'N/A')}"},
+                {"type": "mrkdwn", "text": f"*Categoria:*\n{brand.get('category', 'N/A')}"},
             ],
         },
-        {"type": "divider"},
-        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Horarios / disponibilidad detectada:*\n{meeting_text}"}},
-        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Reply completo del cliente:*\n>{reply_text}"}},
-        {
-            "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Razonamiento LLM:*\n{classification.get('reasoning', '')}"},
-        },
-        {
-            "type": "section",
-            "fields": [
-                {"type": "mrkdwn", "text": f"*Accion tomada:*\n{action_taken or 'N/A'}"},
-                {"type": "mrkdwn", "text": f"*Timestamp:*\n{timestamp or 'N/A'}"},
-            ],
-        },
-        {"type": "context", "elements": [{"type": "mrkdwn", "text": f"*Log:*\n{log_text}"}]},
+        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Reply:*\n>{reply_text}"}},
+        {"type": "context", "elements": [{"type": "mrkdwn", "text": f"{action_taken or 'Handoff generado'} · {timestamp or 'sin timestamp'}"}]},
     ]
 
 

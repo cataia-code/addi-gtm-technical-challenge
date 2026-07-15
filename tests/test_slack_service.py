@@ -25,7 +25,7 @@ Mis horarios sugeridos para una llamada de 20 minutos son:
             ],
         )
 
-    def test_build_handoff_blocks_includes_client_contact_and_reply(self):
+    def test_build_handoff_blocks_is_compact_and_reply_first(self):
         brand = {
             "brand_id": "Brand_0145",
             "category": "Moda",
@@ -57,7 +57,10 @@ Mis horarios sugeridos para una llamada de 20 minutos son:
         self.assertIn("+573228250742", rendered)
         self.assertIn("Opcion 1: martes 3pm", rendered)
         self.assertIn("WhatsApp enviado + handoff Slack", rendered)
-        self.assertIn("Reply completo del cliente", rendered)
+        self.assertIn("*Reply:*", rendered)
+        self.assertNotIn("*GMV 12m:*", rendered)
+        self.assertNotIn("*Score:*", rendered)
+        self.assertLessEqual(len(blocks), 5)
 
 
 if __name__ == "__main__":
