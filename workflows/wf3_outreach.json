@@ -1,0 +1,438 @@
+{
+  "name": "WF-3: Outreach (Email D0 → LinkedIn D2 → WhatsApp D5)",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": "{{ $env.GOOGLE_SHEETS_ID }}",
+        "range": "Tier_B"
+      },
+      "id": "uuid-read-tier-b-wf3",
+      "name": "Leer Tier B enriquecido",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        50,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ $json.data.filter(row => row.enrichment_status === 'success') }}"
+      },
+      "id": "uuid-filter-success-enrichment",
+      "name": "Filtrar solo enrichment_status=success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        250,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "item",
+        "operation": "split",
+        "nodeVersion": 1
+      },
+      "id": "uuid-split-for-outreach",
+      "name": "Iterar por cada brand (outreach)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        450,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "subject": "{{ ($json.category || 'Oportunidad').replace(/^\\w/, c => c.toUpperCase()) }}: Crece con BNPL en Addi Marketplace",
+        "from": "{{ $env.SMARTLEAD_FROM_EMAIL || 'hunter@addi.com' }}",
+        "to": "{{ $json.contacto_email }}",
+        "body": "Hola {{ $json.contacto_nombre }},\n\nVimos que {{ $json.brand_id }} genera COP {{ $json.gmv_cop_millions_12m }} MM anuales con momentum del {{ $json.gmv_90d_to_12m_ratio }}% en los últimos 3 meses.\n\nEn categoría {{ $json.category }}, el volumen de consumo con BNPL sigue creciendo. Muchas marcas como ustedes ya multiplican ordenes originando opciones de crédito en Addi Marketplace — y sin esfuerzo operativo extra (nuestro stack maneja validación, desembolso, cobranza).\n\n¿Nos damos 15 min esta semana para explorar la oportunidad?\n\nSaludos,\nHunter Jr\nMarketplace Growth, Addi"
+      },
+      "id": "uuid-smartlead-d0",
+      "name": "D0: Enviar Email via Smartlead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        650,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SMARTLEAD_WEBHOOK_API }}/campaigns",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{ $env.SMARTLEAD_API_KEY }}"
+        },
+        "body": {
+          "email": "{{ $json.contacto_email }}",
+          "name": "{{ $json.contacto_nombre }}",
+          "subject": "{{ ($json.category || 'Oportunidad').replace(/^\\w/, c => c.toUpperCase()) }}: Crece con BNPL en Addi Marketplace",
+          "body": "Hola {{ $json.contacto_nombre }},\n\nVimos que {{ $json.brand_id }} genera COP {{ $json.gmv_cop_millions_12m }} MM anuales con momentum del {{ $json.gmv_90d_to_12m_ratio }}% en los últimos 3 meses.\n\nEn categoría {{ $json.category }}, el volumen de consumo con BNPL sigue creciendo. Muchas marcas como ustedes ya multiplican ordenes originando opciones de crédito en Addi Marketplace — y sin esfuerzo operativo extra (nuestro stack maneja validación, desembolso, cobranza).\n\n¿Nos damos 15 min esta semana para explorar la oportunidad?\n\nSaludos,\nHunter Jr\nMarketplace Growth, Addi",
+          "tracking": true
+        }
+      },
+      "id": "uuid-smartlead-api",
+      "name": "Llamar Smartlead API (email)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        850,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ { brand_id: $json.brand_id, outreach_email_d0: new Date().toISOString(), smartlead_campaign_id: $json.campaign_id || 'manual', outreach_status: 'in_progress' } }}"
+      },
+      "id": "uuid-log-d0",
+      "name": "Registrar envío D0",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "waitValue": 2,
+        "waitUnit": "days"
+      },
+      "id": "uuid-wait-d2",
+      "name": "Esperar D2 (2 días)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ $json.opt_in === true }}"
+      },
+      "id": "uuid-if-opt-in",
+      "name": "IF opt_in = true (WhatsApp)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://waba.360dialog.io/v1/messages",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{ $env.WHATSAPP_360DIALOG_API_KEY }}"
+        },
+        "body": {
+          "messaging_product": "whatsapp",
+          "to": "{{ $json.phone || '+57' }}",
+          "type": "template",
+          "template": {
+            "name": "addi_bnpl_pitch",
+            "language": {
+              "code": "es"
+            },
+            "parameters": {
+              "body": {
+                "parameters": [
+                  {
+                    "type": "text",
+                    "text": "{{ $json.contacto_nombre }}"
+                  },
+                  {
+                    "type": "text",
+                    "text": "{{ $json.brand_id }}"
+                  },
+                  {
+                    "type": "text",
+                    "text": "{{ $json.category }}"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "id": "uuid-whatsapp-d5",
+      "name": "D5: Enviar WhatsApp (si opt_in=true)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1650,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ { ...$json, whatsapp_sent: true, whatsapp_message_id: $json.messages?.[0]?.id || '' } }}"
+      },
+      "id": "uuid-log-d5-success",
+      "name": "Log D5 éxito",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ { ...$json, whatsapp_sent: false, whatsapp_error: $error.message } }}"
+      },
+      "id": "uuid-log-d5-error",
+      "name": "Log D5 error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "bodyType": "json",
+        "body": {
+          "text": "🔗 TAREA MANUAL: LinkedIn Connection (D2)",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Brand:* {{ $json.brand_id }} ({{ $json.category }})\n*Contacto:* {{ $json.contacto_nombre }}\n*Email:* {{ $json.contacto_email }}\n*LinkedIn:* <{{ $json.linkedin_url }}|Ver perfil>\n*GMV:* COP {{ $json.gmv_cop_millions_12m }} MM\n*Momentum:* {{ $json.gmv_90d_to_12m_ratio }}x\n\n⚠️  NO automatices. Copia + pega manual con tu cuenta LinkedIn."
+              }
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-linkedin-task",
+      "name": "Crear task LinkedIn en Slack (D2)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1650,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "bodyType": "json",
+        "body": {
+          "text": "⚠️ WF-3 Error",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Error:* {{ $error.message }}\n*Brand:* {{ $json.brand_id }}\n*Nodo:* {{ $error.node }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-error-wf3",
+      "name": "Notificar error en Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "bodyType": "json",
+        "body": {
+          "text": "✅ WF-3 Outreach completado",
+          "blocks": [
+            {
+              "type": "header",
+              "text": {
+                "type": "plain_text",
+                "text": "WF-3: Outreach - Completado"
+              }
+            },
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "Secuencia multicanal iniciada (D0 email + D2 LinkedIn + D5 WhatsApp)\nMarcas en motion: {{ $json.length }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-success-wf3",
+      "name": "Notificar éxito",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2050,
+        50
+      ]
+    }
+  ],
+  "connections": {
+    "Leer Tier B enriquecido": {
+      "main": [
+        [
+          {
+            "node": "Filtrar solo enrichment_status=success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar solo enrichment_status=success": {
+      "main": [
+        [
+          {
+            "node": "Iterar por cada brand (outreach)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iterar por cada brand (outreach)": {
+      "main": [
+        [
+          {
+            "node": "Llamar Smartlead API (email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Smartlead API (email)": {
+      "main": [
+        [
+          {
+            "node": "Registrar envío D0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar error en Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar envío D0": {
+      "main": [
+        [
+          {
+            "node": "Esperar D2 (2 días)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Esperar D2 (2 días)": {
+      "main": [
+        [
+          {
+            "node": "Crear task LinkedIn en Slack (D2)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF opt_in = true (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF opt_in = true (WhatsApp)": {
+      "main": [
+        [
+          {
+            "node": "D5: Enviar WhatsApp (si opt_in=true)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log D5 error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "D5: Enviar WhatsApp (si opt_in=true)": {
+      "main": [
+        [
+          {
+            "node": "Log D5 éxito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Log D5 error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log D5 éxito": {
+      "main": [
+        [
+          {
+            "node": "Notificar éxito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log D5 error": {
+      "main": [
+        [
+          {
+            "node": "Notificar éxito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Bogota",
+    "executionOrder": "v1"
+  },
+  "id": "1bb14df7-9ae1-4224-b546-aee563e38d0c",
+  "tags": []
+}

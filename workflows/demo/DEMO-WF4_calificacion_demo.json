@@ -1,0 +1,95 @@
+{
+  "name": "DEMO-WF4: Calificación con Groq",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "classification-webhook",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "responseHeaders": {}
+      },
+      "id": "webhook_trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "const reply = $json.reply || 'Sin respuesta';\nconst systemPrompt = 'Eres un clasificador de leads para Addi Marketplace. Analiza el reply del merchant e indica: intent_score (0-100), is_decision_maker (true/false), objection_type (string|null), suggested_action (agendar|nurture|descartar). Responde SOLO en JSON válido, sin markdown.';\nconst userMessage = `Reply del merchant: ${reply}\\n\\nContexto: Este merchant es del sector Hogar, actualmente vende COP 4,908 MM anuales con Addi BNPL. Detecta si está interesado, si es el decision maker, y qué acción tomar.`;\n\nreturn {\n  reply: reply,\n  systemPrompt: systemPrompt,\n  userMessage: userMessage\n};"
+      },
+      "id": "code_prepare_prompt",
+      "name": "Prepare Groq Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 250]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "generic",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": "{{ $env.GROQ_API_KEY }}",
+        "contentType": "application/json",
+        "specifyHeaders": false,
+        "jsonBody": true,
+        "bodyParametersJson": "{\n  \"model\": \"mixtral-8x7b-32768\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"{{$json.systemPrompt}}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{$json.userMessage}}\"\n    }\n  ],\n  \"temperature\": 0,\n  \"max_tokens\": 200\n}"
+      },
+      "id": "http_groq_api",
+      "name": "Call Groq API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [750, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  const groqResponse = $json.choices[0].message.content;\n  const parsed = JSON.parse(groqResponse);\n  return {\n    reply: $json.reply || 'Sin respuesta',\n    intent_score: parsed.intent_score || 0,\n    is_decision_maker: parsed.is_decision_maker || false,\n    objection_type: parsed.objection_type || null,\n    suggested_action: parsed.suggested_action || 'descartar',\n    raw_response: groqResponse\n  };\n} catch (err) {\n  return {\n    error: err.message,\n    raw_response: $json.choices ? $json.choices[0].message.content : 'No response'\n  };\n}"
+      },
+      "id": "code_parse_groq",
+      "name": "Parse Groq Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 250]
+    }
+  ],
+  "connections": {
+    "webhook_trigger": {
+      "main": [
+        [
+          {
+            "node": "code_prepare_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_prepare_prompt": {
+      "main": [
+        [
+          {
+            "node": "http_groq_api",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http_groq_api": {
+      "main": [
+        [
+          {
+            "node": "code_parse_groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

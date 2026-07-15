@@ -1,0 +1,44 @@
+"""Twilio WhatsApp service with explicit opt-in gate."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+
+import requests
+
+
+@dataclass(frozen=True)
+class WhatsAppResult:
+    sent: bool
+    reason: str
+    provider_response: dict | None = None
+
+
+def send_whatsapp(
+    to_number: str,
+    body: str,
+    *,
+    has_opt_in: bool,
+    dry_run: bool = True,
+) -> WhatsAppResult:
+    if not has_opt_in:
+        return WhatsAppResult(sent=False, reason="blocked_no_opt_in")
+    if dry_run:
+        return WhatsAppResult(sent=False, reason="dry_run")
+
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_number = os.environ.get("TWILIO_WHATSAPP_FROM")
+    if not all([account_sid, auth_token, from_number]):
+        raise RuntimeError("Twilio env vars are required for live WhatsApp")
+
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+    response = requests.post(
+        url,
+        data={"From": from_number, "To": f"whatsapp:{to_number}", "Body": body},
+        auth=(account_sid, auth_token),
+        timeout=20,
+    )
+    response.raise_for_status()
+    return WhatsAppResult(sent=True, reason="sent", provider_response=response.json())

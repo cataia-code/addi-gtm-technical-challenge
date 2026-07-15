@@ -1,0 +1,327 @@
+{
+  "name": "WF-4: Calificacion (Groq API)",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "uuid-execute-workflow-trigger",
+      "name": "When executed by another workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        50,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ { brand_id: $json.brand_id, category: $json.category, gmv_cop_millions_12m: $json.gmv_cop_millions_12m, gmv_90d_to_12m_ratio: $json.gmv_90d_to_12m_ratio, final_score: $json.final_score, contacto_nombre: $json.contacto_nombre, reply_text: $json.reply_text, reply_date: $json.reply_date } }}"
+      },
+      "id": "uuid-extract-reply",
+      "name": "Extraer datos relevantes",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        250,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{ $env.GROQ_API_KEY }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "model": "llama-3.3-70b-versatile",
+          "temperature": 0,
+          "max_tokens": 500,
+          "response_format": {
+            "type": "json_object"
+          },
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a B2B sales qualification expert for Addi Marketplace. Return only valid JSON with intent_score, is_decision_maker, objection_type, suggested_action, reasoning. No markdown. IMPORTANT: suggested_action must be EXACTLY one of these 3 words, without extra text: agendar, nurture, descartar. Put any detail or rationale in reasoning, not in suggested_action."
+            },
+            {
+              "role": "user",
+              "content": "Contexto:\\nBrand: {{ $json.brand_id }} ({{ $json.category }})\\nGMV 12m: COP {{ $json.gmv_cop_millions_12m }} MM\\nMomentum: {{ $json.gmv_90d_to_12m_ratio }}x\\nScore Addi: {{ $json.final_score }}\\nContacto: {{ $json.contacto_nombre }}\\n\\nReply recibido:\\n{{ $json.reply_text }}\\n\\nClasifica segun intent_score (0-100), decision maker, objection type, y suggested action. Responde SOLO en JSON valido sin markdown."
+            }
+          ]
+        }
+      },
+      "id": "uuid-groq-api",
+      "name": "Llamar Groq API (qualification)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        450,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $node[\"Extraer datos relevantes\"].json;\nconst content = $json.choices?.[0]?.message?.content || '{}';\nconst parsed = JSON.parse(content);\nconst intentScore = Number.isFinite(Number(parsed.intent_score)) ? Number(parsed.intent_score) : 0;\nconst suggestedAction = ['agendar', 'nurture', 'descartar'].includes(String(parsed.suggested_action || '').trim().toLowerCase()) ? String(parsed.suggested_action).trim().toLowerCase() : (intentScore >= 70 ? 'agendar' : intentScore >= 40 ? 'nurture' : 'descartar');\nreturn [{ json: { ...context, ...parsed, intent_score: intentScore, suggested_action: suggestedAction } }];"
+      },
+      "id": "uuid-parse-groq-json",
+      "name": "Parsear JSON de Groq",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const intentScore = Number.isFinite(Number($json.intent_score)) ? Number($json.intent_score) : 0;\nconst suggestedAction = ['agendar', 'nurture', 'descartar'].includes(String($json.suggested_action || '').trim().toLowerCase()) ? String($json.suggested_action).trim().toLowerCase() : (intentScore >= 70 ? 'agendar' : intentScore >= 40 ? 'nurture' : 'descartar');\nreturn [{ json: { ...$json, intent_score: intentScore, suggested_action: suggestedAction } }];"
+      },
+      "id": "uuid-validate-score",
+      "name": "Validar intent_score en rango",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$json, qualification_result: { intent_score: $json.intent_score, is_decision_maker: $json.is_decision_maker, objection_type: $json.objection_type, suggested_action: $json.suggested_action, reasoning: $json.reasoning }, qualification_status: 'success', qualified_timestamp: new Date().toISOString() } }];"
+      },
+      "id": "uuid-format-result",
+      "name": "Formatear resultado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "expression": "{{ $json.qualification_result.suggested_action === 'agendar' }}"
+      },
+      "id": "uuid-if-agendar",
+      "name": "IF suggested_action = agendar",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": "94ae8bc4-5361-4845-a955-96bfbb5d7b4c",
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "uuid-trigger-wf5",
+      "name": "Disparar WF-5 (handoff)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log(`[WF-4 discard] ${JSON.stringify({ brand_id: $json.brand_id, qualification_result: $json.qualification_result, qualified_timestamp: $json.qualified_timestamp })}`);\nreturn [{ json: { brand_id: $json.brand_id, qualification_result: $json.qualification_result, qualified_timestamp: $json.qualified_timestamp, output_mode: 'console_log' } }];"
+      },
+      "id": "uuid-log-discard",
+      "name": "Registrar discard local",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "bodyType": "json",
+        "body": {
+          "text": "WF-4 Error en Groq",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Error:* {{ $error.message }}\\n*Brand:* {{ $json.brand_id }}\\n*Accion:* Reintentando en 1 hora"
+              }
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-error-wf4",
+      "name": "Notificar error Groq",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "bodyType": "json",
+        "body": {
+          "text": "WF-4 Qualification completa",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "*Brand:* {{ $json.brand_id }}\\n*Intent Score:* {{ $json.qualification_result.intent_score }}/100\\n*Decision Maker:* {{ $json.qualification_result.is_decision_maker ? 'Si' : 'No' }}\\n*Suggested:* {{ $json.qualification_result.suggested_action }}"
+              }
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-success-wf4",
+      "name": "Notificar resultado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1650,
+        50
+      ]
+    }
+  ],
+  "connections": {
+    "When executed by another workflow": {
+      "main": [
+        [
+          {
+            "node": "Extraer datos relevantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer datos relevantes": {
+      "main": [
+        [
+          {
+            "node": "Llamar Groq API (qualification)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Llamar Groq API (qualification)": {
+      "main": [
+        [
+          {
+            "node": "Parsear JSON de Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ],
+      "error": [
+        [
+          {
+            "node": "Notificar error Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear JSON de Groq": {
+      "main": [
+        [
+          {
+            "node": "Validar intent_score en rango",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar intent_score en rango": {
+      "main": [
+        [
+          {
+            "node": "Formatear resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear resultado": {
+      "main": [
+        [
+          {
+            "node": "IF suggested_action = agendar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF suggested_action = agendar": {
+      "main": [
+        [
+          {
+            "node": "Disparar WF-5 (handoff)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar discard local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar discard local": {
+      "main": [
+        [
+          {
+            "node": "Notificar resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar WF-5 (handoff)": {
+      "main": [
+        [
+          {
+            "node": "Notificar resultado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Bogota",
+    "executionOrder": "v1"
+  },
+  "id": "8eb94d84-fb9d-416b-9805-150c5dd5f02d",
+  "tags": []
+}

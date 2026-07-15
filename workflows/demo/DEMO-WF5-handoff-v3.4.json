@@ -1,0 +1,232 @@
+{
+  "name": "DEMO-WF5: Handoff (Salesforce Simulado + Slack)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "uuid-start",
+      "name": "Inicio",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [50, 50]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440001",
+              "name": "brand_id",
+              "value": "Brand_0145",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440002",
+              "name": "category",
+              "value": "Hogar",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440003",
+              "name": "gmv_cop_millions_12m",
+              "value": 4908,
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440004",
+              "name": "gmv_90d_to_12m_ratio",
+              "value": 3.25,
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440005",
+              "name": "final_score",
+              "value": 89.2,
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440006",
+              "name": "contacto_nombre",
+              "value": "Maria Rodriguez",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440007",
+              "name": "contacto_email",
+              "value": "maria@brand0145.com",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440008",
+              "name": "intent_score",
+              "value": 92,
+              "type": "number"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440009",
+              "name": "suggested_action",
+              "value": "agendar",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-44665544000a",
+              "name": "reply_text",
+              "value": "Si me interesa, como funciona el proceso de integracion?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "uuid-sample-lead",
+      "name": "Datos de lead calificado (v3.4 - hardcoded)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [250, 50]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-44665544000b",
+              "name": "salesforce_lead_id",
+              "value": "DEMO_Brand_0145_A7B9C2D1",
+              "type": "string"
+            },
+            {
+              "id": "550e8400-e29b-41d4-a716-44665544000c",
+              "name": "created_timestamp",
+              "value": "2026-07-15T10:35:00Z",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "uuid-simulate-salesforce",
+      "name": "Simular creacion Salesforce Lead (v3.4 - hardcoded)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [450, 50]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-44665544000d",
+              "name": "mensaje_slack",
+              "value": "LEAD CALIFICADO\nBrand: Brand_0145\nCategoria: Hogar | GMV 12m: COP 4,908 MM\nMomentum: 3.25x\nReply: Si me interesa, como funciona el proceso de integracion?\nIntent score: 92/100\nAccion sugerida: agendar\nSalesforce Lead ID (Demo): DEMO_Brand_0145_A7B9C2D1",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "uuid-format-slack",
+      "name": "Formatear mensaje Slack (v3.4 - hardcoded)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [650, 50]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "<SLACK_WEBHOOK_URL>",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.mensaje_slack }}"
+            }
+          ]
+        }
+      },
+      "id": "uuid-slack-notify",
+      "name": "Notificar Slack (URL Demo Addi - v3.4 HTTP)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 50]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "550e8400-e29b-41d4-a716-44665544000e",
+              "name": "status",
+              "value": "handoff_completado",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "uuid-result",
+      "name": "Resultado (handoff completado - v3.4)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1050, 50]
+    }
+  ],
+  "connections": {
+    "uuid-start": {
+      "main": [
+        [
+          {
+            "node": "uuid-sample-lead",
+            "branch": 0
+          }
+        ]
+      ]
+    },
+    "uuid-sample-lead": {
+      "main": [
+        [
+          {
+            "node": "uuid-simulate-salesforce",
+            "branch": 0
+          }
+        ]
+      ]
+    },
+    "uuid-simulate-salesforce": {
+      "main": [
+        [
+          {
+            "node": "uuid-format-slack",
+            "branch": 0
+          }
+        ]
+      ]
+    },
+    "uuid-format-slack": {
+      "main": [
+        [
+          {
+            "node": "uuid-slack-notify",
+            "branch": 0
+          }
+        ]
+      ]
+    },
+    "uuid-slack-notify": {
+      "main": [
+        [
+          {
+            "node": "uuid-result",
+            "branch": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Bogota",
+    "executionOrder": "v1"
+  }
+}

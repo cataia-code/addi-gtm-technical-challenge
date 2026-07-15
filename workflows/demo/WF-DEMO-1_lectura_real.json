@@ -1,0 +1,68 @@
+{
+  "name": "WF-DEMO-1: Lectura Real de Top50",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [50, 300]
+    },
+    {
+      "parameters": {
+        "filePath": "analysis/top50.csv",
+        "options": {}
+      },
+      "name": "Read CSV File",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "rawData": "=csv"
+      },
+      "name": "Parse CSV",
+      "type": "n8n-nodes-base.spreadsheetFile",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtrar Tier B y seleccionar 3 marcas específicas\nconst rows = $input.all();\nconst tierBRows = rows.filter(r => r.json.tier === 'B');\n\n// Seleccionar por rank exacto: 16, 33, 50\nconst selectedBrands = tierBRows.filter(r => \n  r.json.rank === '16' || r.json.rank === '33' || r.json.rank === '50'\n);\n\n// Mapear a estructura clara\nconst brands = selectedBrands.map(b => ({\n  rank: parseInt(b.json.rank),\n  brand_id: b.json.brand_id,\n  category: b.json.category,\n  tier: b.json.tier,\n  gmv_cop_millions_12m: parseInt(b.json.gmv_cop_millions_12m),\n  n_unique_clients_12m: parseInt(b.json.n_unique_clients_12m),\n  gmv_90d_to_12m_ratio: parseFloat(b.json.gmv_90d_to_12m_ratio),\n  recency_score: parseFloat(b.json.recency_score),\n  fit_score: parseFloat(b.json.fit_score),\n  momentum_score: parseFloat(b.json.momentum_score),\n  final_score: parseFloat(b.json.final_score),\n  why: b.json.why,\n  routing: b.json.routing\n}));\n\n// Retornar los 3 items para procesamiento posterior\nreturn brands.map(b => ({ json: b }));"
+      },
+      "name": "Filter & Select Top50 Brands",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append"
+      },
+      "name": "Output",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "Read CSV File", "branch": 0 }]]
+    },
+    "Read CSV File": {
+      "main": [[{ "node": "Parse CSV", "branch": 0 }]]
+    },
+    "Parse CSV": {
+      "main": [[{ "node": "Filter & Select Top50 Brands", "branch": 0 }]]
+    },
+    "Filter & Select Top50 Brands": {
+      "main": [[{ "node": "Output", "branch": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

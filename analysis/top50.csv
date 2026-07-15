@@ -1,0 +1,51 @@
+rank,brand_id,tier,category,gmv_cop_millions_12m,n_unique_clients_12m,gmv_90d_to_12m_ratio,days_since_last_orig,recency_score,fit_score,momentum_score,category_bonus,final_score,why,routing
+1,Brand_0002,A,Tecnología,134431,84892,,1,,,,,,"Top 15 GMV puro: COP 134,431 MM",KAM/Hunter Sr
+2,Brand_0004,A,Moda,94270,146577,,0,,,,,,"Top 15 GMV puro: COP 94,270 MM",KAM/Hunter Sr
+3,Brand_0005,A,Moda,79572,142077,,0,,,,,,"Top 15 GMV puro: COP 79,572 MM",KAM/Hunter Sr
+4,Brand_0008,A,Moda,72807,217144,,0,,,,,,"Top 15 GMV puro: COP 72,807 MM",KAM/Hunter Sr
+5,Brand_0011,A,Moda,57769,154336,,0,,,,,,"Top 15 GMV puro: COP 57,769 MM",KAM/Hunter Sr
+6,Brand_0012,A,Telecomunicaciones,52822,34433,,1,,,,,,"Top 15 GMV puro: COP 52,822 MM",KAM/Hunter Sr
+7,Brand_0016,A,Hogar,37123,24982,,1,,,,,,"Top 15 GMV puro: COP 37,123 MM",KAM/Hunter Sr
+8,Brand_0019,A,Hogar,36178,27916,,1,,,,,,"Top 15 GMV puro: COP 36,178 MM",KAM/Hunter Sr
+9,Brand_0020,A,Moda,34528,89203,,0,,,,,,"Top 15 GMV puro: COP 34,528 MM",KAM/Hunter Sr
+10,Brand_0022,A,Vehículos y autopartes,29019,7291,,3,,,,,,"Top 15 GMV puro: COP 29,019 MM",KAM/Hunter Sr
+11,Brand_0025,A,Vehículos y autopartes,24660,5792,,2,,,,,,"Top 15 GMV puro: COP 24,660 MM",KAM/Hunter Sr
+12,Brand_0026,A,Tecnología,23993,12978,,1,,,,,,"Top 15 GMV puro: COP 23,993 MM",KAM/Hunter Sr
+13,Brand_0028,A,Vehículos y autopartes,22936,41623,,0,,,,,,"Top 15 GMV puro: COP 22,936 MM",KAM/Hunter Sr
+14,Brand_0031,A,Hogar,20396,13031,,1,,,,,,"Top 15 GMV puro: COP 20,396 MM",KAM/Hunter Sr
+15,Brand_0035,A,Tecnología,18963,36343,,1,,,,,,"Top 15 GMV puro: COP 18,963 MM",KAM/Hunter Sr
+16,Brand_0145,B,Hogar,4908,7036,3.25,1,96.7,89.7,100.0,10.0,89.2,"Score 89/100: COP 4,908 MM, crecimiento 325%, Hogar BPI 11.8%",Motion/SDR
+17,Brand_0826,B,Hogar,775,2638,1.74,1,96.7,90.6,86.8,10.0,86.4,"Score 86/100: COP 775 MM, crecimiento 174%, Hogar BPI 11.8%",Motion/SDR
+18,Brand_0755,B,Moda,847,2881,1.71,1,96.7,90.5,85.4,10.0,85.9,"Score 86/100: COP 847 MM, crecimiento 171%, Moda BPI 9.2%",Motion/SDR
+19,Brand_0463,B,Moda,1466,6084,1.64,0,100.0,91.2,82.2,10.0,85.7,"Score 86/100: COP 1,466 MM, crecimiento 164%, Moda BPI 9.2%",Motion/SDR
+20,Brand_0686,B,Vehículos y autopartes,943,1755,3.81,1,96.7,83.4,100.0,10.0,85.7,"Score 86/100: COP 943 MM, crecimiento 381%, Vehículos y autopartes BPI 6.0%",Motion/SDR
+21,Brand_0594,B,Belleza,1100,3856,2.07,1,96.7,91.6,100.0,5.0,85.2,"Score 85/100: COP 1,100 MM, crecimiento 207%, Belleza BPI 18.6%",Motion/SDR
+22,Brand_0663,B,Deportes y aire libre,976,2614,3.68,0,100.0,89.6,100.0,5.0,84.3,"Score 84/100: COP 976 MM, crecimiento 368%, Deportes y aire libre BPI 12.4%",Motion/SDR
+23,Brand_1193,B,Moda,529,2715,1.95,1,96.7,81.8,97.6,10.0,84.2,"Score 84/100: COP 529 MM, crecimiento 195%, Moda BPI 9.2%",Motion/SDR
+24,Brand_0509,B,Belleza,1336,5527,1.83,0,100.0,91.5,91.3,5.0,83.1,"Score 83/100: COP 1,336 MM, crecimiento 183%, Belleza BPI 18.6%",Motion/SDR
+25,Brand_0763,B,Moda,839,2154,1.41,1,96.7,91.3,70.3,10.0,82.6,"Score 83/100: COP 839 MM, crecimiento 141%, Moda BPI 9.2%",Motion/SDR
+26,Brand_0640,B,Moda,1020,917,2.16,1,96.7,77.6,100.0,10.0,82.5,"Score 83/100: COP 1,020 MM, crecimiento 216%, Moda BPI 9.2%",Motion/SDR
+27,Brand_0771,B,Belleza,828,1749,2.09,1,96.7,85.4,100.0,5.0,81.8,"Score 82/100: COP 828 MM, crecimiento 209%, Belleza BPI 18.6%",Motion/SDR
+28,Brand_1203,B,Moda,525,3311,1.79,1,96.7,80.8,89.6,10.0,81.7,"Score 82/100: COP 525 MM, crecimiento 179%, Moda BPI 9.2%",Motion/SDR
+29,Brand_1644,B,Moda,375,1630,1.96,0,100.0,76.6,98.1,10.0,81.7,"Score 82/100: COP 375 MM, crecimiento 196%, Moda BPI 9.2%",Motion/SDR
+30,Brand_0062,B,Hogar,11402,29624,0.98,1,96.7,98.8,49.2,10.0,81.5,"Score 82/100: COP 11,402 MM, crecimiento 98%, Hogar BPI 11.8%",Motion/SDR
+31,Brand_0347,B,Vehículos y autopartes,2028,4902,1.11,2,93.6,96.2,55.6,10.0,81.5,"Score 81/100: COP 2,028 MM, crecimiento 111%, Vehículos y autopartes BPI 6.0%",Motion/SDR
+32,Brand_1523,B,Moda,405,1651,1.88,1,96.7,77.8,94.2,10.0,81.2,"Score 81/100: COP 405 MM, crecimiento 188%, Moda BPI 9.2%",Motion/SDR
+33,Brand_0546,B,Moda,1206,4420,1.26,0,100.0,91.7,62.9,10.0,81.1,"Score 81/100: COP 1,206 MM, crecimiento 126%, Moda BPI 9.2%",Motion/SDR
+34,Brand_0194,B,Moda,3790,12407,1.05,0,100.0,96.0,52.5,10.0,80.9,"Score 81/100: COP 3,790 MM, crecimiento 105%, Moda BPI 9.2%",Motion/SDR
+35,Brand_0956,B,Moda,668,2248,1.46,0,100.0,86.7,73.0,10.0,80.9,"Score 81/100: COP 668 MM, crecimiento 146%, Moda BPI 9.2%",Motion/SDR
+36,Brand_1122,B,Hogar,565,3522,1.7,1,96.7,81.5,84.9,10.0,80.9,"Score 81/100: COP 565 MM, crecimiento 170%, Hogar BPI 11.8%",Motion/SDR
+37,Brand_0251,B,Vehículos y autopartes,2915,6834,1.26,0,100.0,91.2,63.0,10.0,80.9,"Score 81/100: COP 2,915 MM, crecimiento 126%, Vehículos y autopartes BPI 6.0%",Motion/SDR
+38,Brand_0506,B,Hogar,1341,819,2.65,1,96.7,74.6,100.0,10.0,80.9,"Score 81/100: COP 1,341 MM, crecimiento 265%, Hogar BPI 11.8%",Motion/SDR
+39,Brand_0063,B,Moda,11227,30005,0.97,0,100.0,97.7,48.3,10.0,80.8,"Score 81/100: COP 11,227 MM, crecimiento 97%, Moda BPI 9.2%",Motion/SDR
+40,Brand_0723,B,Moda,891,1779,1.59,1,96.7,83.7,79.3,10.0,80.7,"Score 81/100: COP 891 MM, crecimiento 159%, Moda BPI 9.2%",Motion/SDR
+41,Brand_0073,B,Moda,10196,25951,1.03,0,100.0,96.0,51.3,10.0,80.6,"Score 81/100: COP 10,196 MM, crecimiento 103%, Moda BPI 9.2%",Motion/SDR
+42,Brand_0491,B,Hogar,1390,4053,1.03,1,96.7,95.1,51.3,10.0,80.0,"Score 80/100: COP 1,390 MM, crecimiento 103%, Hogar BPI 11.8%",Motion/SDR
+43,Brand_0045,B,Hogar,15742,43608,0.82,0,100.0,99.1,41.1,10.0,79.8,"Score 80/100: COP 15,742 MM, crecimiento 82%, Hogar BPI 11.8%",Motion/SDR
+44,Brand_1350,B,Deportes y aire libre,460,1285,2.12,1,96.7,81.6,100.0,5.0,79.7,"Score 80/100: COP 460 MM, crecimiento 212%, Deportes y aire libre BPI 12.4%",Motion/SDR
+45,Brand_0086,B,Hogar,9137,9864,1.25,1,96.7,89.2,62.4,10.0,79.5,"Score 79/100: COP 9,137 MM, crecimiento 125%, Hogar BPI 11.8%",Motion/SDR
+46,Brand_0441,B,Joyas y accesorios,1559,5343,1.32,0,100.0,96.0,65.9,5.0,79.3,"Score 79/100: COP 1,559 MM, crecimiento 132%, Joyas y accesorios BPI 16.6%",Motion/SDR
+47,Brand_1415,B,Belleza,439,1929,2.27,1,96.7,80.2,100.0,5.0,79.0,"Score 79/100: COP 439 MM, crecimiento 227%, Belleza BPI 18.6%",Motion/SDR
+48,Brand_0195,B,Farmacias,3782,15953,1.89,0,100.0,91.4,94.3,0.0,78.9,"Score 79/100: COP 3,782 MM, crecimiento 189%, Farmacias BPI 40.0%",Motion/SDR
+49,Brand_1102,B,Hogar,577,1945,1.3,1,96.7,86.7,64.8,10.0,78.7,"Score 79/100: COP 577 MM, crecimiento 130%, Hogar BPI 11.8%",Motion/SDR
+50,Brand_0391,B,Vehículos y autopartes,1861,680,1.94,1,96.7,71.9,96.8,10.0,78.6,"Score 79/100: COP 1,861 MM, crecimiento 194%, Vehículos y autopartes BPI 6.0%",Motion/SDR
