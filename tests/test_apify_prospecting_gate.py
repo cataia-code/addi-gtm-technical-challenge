@@ -9,9 +9,13 @@ class ApifyProspectingGateTest(unittest.TestCase):
     def test_hogar_colombia_input_is_bounded(self):
         run_input = hogar_colombia_input()
 
-        self.assertEqual(run_input["number_of_pages_to_scrape"], 1)
-        self.assertIn("Colombia", run_input["organization_locations"])
-        self.assertIn("home decor", run_input["organization_industries"])
+        self.assertEqual(run_input["totalResults"], 3)
+        self.assertTrue(run_input["hasEmail"])
+        self.assertTrue(run_input["hasPhone"])
+        self.assertEqual(run_input["emailStatusIncludes"], ["verified"])
+        self.assertIn("Colombia", run_input["personLocationCountryIncludes"])
+        self.assertIn("Furniture", run_input["companyIndustryIncludes"])
+        self.assertIn("Consumer Goods", run_input["companyIndustryIncludes"])
 
     def test_normalize_company_handles_common_actor_fields(self):
         company = normalize_company(
@@ -21,12 +25,19 @@ class ApifyProspectingGateTest(unittest.TestCase):
                 "industry": "Retail",
                 "city": "Bogota",
                 "country": "Colombia",
+                "personName": "Ana Gomez",
+                "personTitle": "Head of Ecommerce",
+                "email": "ana@casatest.co",
+                "phone": "+571234567",
             }
         )
 
         self.assertEqual(company.name, "Casa Test")
         self.assertEqual(company.domain, "casatest.co")
         self.assertEqual(company.industry, "Retail")
+        self.assertEqual(company.contact_name, "Ana Gomez")
+        self.assertEqual(company.contact_email, "ana@casatest.co")
+        self.assertEqual(company.contact_phone, "+571234567")
 
     def test_test2_script_does_not_import_live_outreach_services(self):
         script_path = Path("live_demo/test2_prospeccion_apify_gate.py")

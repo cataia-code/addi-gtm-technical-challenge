@@ -70,6 +70,10 @@ def post_draft_to_slack(company: dict[str, Any], profile: str, draft: str) -> No
                 "fields": [
                     {"type": "mrkdwn", "text": f"*Empresa:*\n{company.get('name') or 'N/A'}"},
                     {"type": "mrkdwn", "text": f"*Dominio:*\n{company.get('domain') or 'N/A'}"},
+                    {"type": "mrkdwn", "text": f"*Contacto:*\n{company.get('contact_name') or 'N/A'}"},
+                    {"type": "mrkdwn", "text": f"*Cargo:*\n{company.get('contact_title') or 'N/A'}"},
+                    {"type": "mrkdwn", "text": f"*Email:*\n{company.get('contact_email') or 'N/A'}"},
+                    {"type": "mrkdwn", "text": f"*Telefono:*\n{company.get('contact_phone') or 'N/A'}"},
                     {"type": "mrkdwn", "text": f"*Industria:*\n{company.get('industry') or 'N/A'}"},
                     {"type": "mrkdwn", "text": f"*Ubicacion:*\n{company.get('city') or 'N/A'}, {company.get('country') or 'N/A'}"},
                 ],
@@ -136,6 +140,11 @@ def append_result(company: dict[str, Any], profile: str, draft: str) -> None:
         handle.write("\n## Prospecto\n\n")
         handle.write(f"- Empresa: {company.get('name')}\n")
         handle.write(f"- Dominio: {company.get('domain')}\n")
+        handle.write(f"- Contacto: {company.get('contact_name')}\n")
+        handle.write(f"- Cargo: {company.get('contact_title')}\n")
+        handle.write(f"- Email: {company.get('contact_email')}\n")
+        handle.write(f"- Telefono: {company.get('contact_phone')}\n")
+        handle.write(f"- LinkedIn: {company.get('linkedin_url')}\n")
         handle.write(f"- Industria: {company.get('industry')}\n")
         handle.write(f"- Ubicacion: {company.get('city')}, {company.get('country')}\n\n")
         handle.write("### Perfil\n\n")
