@@ -40,9 +40,19 @@ def build_handoff_blocks(
                 {"type": "mrkdwn", "text": f"*Categoria:*\n{brand.get('category', 'N/A')}"},
             ],
         },
-        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Reply:*\n>{reply_text}"}},
-        {"type": "context", "elements": [{"type": "mrkdwn", "text": f"{action_taken or 'Handoff generado'} · {timestamp or 'sin timestamp'}"}]},
+        {"type": "section", "text": {"type": "mrkdwn", "text": f"*Reply:*\n```{format_reply_for_slack(reply_text)}```"}},
+        {
+            "type": "context",
+            "elements": [{"type": "mrkdwn", "text": f"{action_taken or 'Handoff generado'} - {timestamp or 'sin timestamp'}"}],
+        },
     ]
+
+
+def format_reply_for_slack(reply_text: str, limit: int = 2500) -> str:
+    safe_text = (reply_text or "").replace("```", "'''").strip()
+    if len(safe_text) <= limit:
+        return safe_text
+    return safe_text[: limit - 30].rstrip() + "\n...[reply truncado]"
 
 
 def extract_meeting_times(reply_text: str) -> list[str]:

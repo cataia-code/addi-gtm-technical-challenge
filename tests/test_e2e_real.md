@@ -9,3 +9,4 @@
 - `2026-07-15T17:35:48` Verificacion Twilio fetch: sid=SMa07a6bee1d536e385058b9439676fd13 status=delivered error_code=None error_message=None
 - `2026-07-15T17:35:42` Slack Block Kit final enviado. action_taken=WhatsApp en espanol aceptado por Twilio + handoff Slack
 - `2026-07-15T17:35:42` E2E real completado.
+- `2026-07-15T17:40:00` Slack reenviado con reply en bloque de codigo para preservar cuerpo multilinea completo. message_id=19f67ec26531139b

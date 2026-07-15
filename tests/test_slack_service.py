@@ -1,6 +1,6 @@
 import unittest
 
-from src.handoff.slack_service import build_handoff_blocks, extract_meeting_times
+from src.handoff.slack_service import build_handoff_blocks, extract_meeting_times, format_reply_for_slack
 
 
 class SlackServiceTest(unittest.TestCase):
@@ -57,10 +57,15 @@ Mis horarios sugeridos para una llamada de 20 minutos son:
         self.assertIn("+573228250742", rendered)
         self.assertIn("Opcion 1: martes 3pm", rendered)
         self.assertIn("WhatsApp enviado + handoff Slack", rendered)
-        self.assertIn("*Reply:*", rendered)
+        self.assertIn("*Reply:*\\n```", rendered)
         self.assertNotIn("*GMV 12m:*", rendered)
         self.assertNotIn("*Score:*", rendered)
         self.assertLessEqual(len(blocks), 5)
+
+    def test_format_reply_for_slack_preserves_extra_body_lines(self):
+        reply = "Si me interesa.\n- Opcion 1: 4 pm\nNota adicional: inviten a mi socio."
+
+        self.assertEqual(format_reply_for_slack(reply), reply)
 
 
 if __name__ == "__main__":
