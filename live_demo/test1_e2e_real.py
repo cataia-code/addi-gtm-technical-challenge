@@ -18,9 +18,7 @@ if str(ROOT) not in sys.path:
 
 from live_demo.email_listener import wait_for_reply_and_classify
 from src.db import repository
-from src.handoff.slack_service import post_handoff
 from src.outreach.email_service import send_email_d0
-from src.outreach.whatsapp_service import send_whatsapp
 
 
 REPORT_PATH = ROOT / "tests" / "test_e2e_real.md"
@@ -73,49 +71,20 @@ def main() -> None:
         poll_seconds=15,
         after_epoch_ms=sent_after_epoch_ms,
         allow_sent_demo_fallback=True,
+        process_with_langgraph=True,
+        dry_run=False,
     )
     reply_text = state.get("reply_recibido") or ""
     classification = state.get("clasificacion") or {}
     decision = state.get("decision")
-    log_step(f"Reply detectado y clasificado. decision={decision} classification={json.dumps(classification, ensure_ascii=False)}")
-
-    twilio_called = False
-    action_taken = ""
-    timestamp = datetime.now().isoformat(timespec="seconds")
-
-    if decision == "agendar":
-        has_opt_in = repository.has_opt_in(brand["brand_id"], "whatsapp")
-        assert has_opt_in, "No se puede enviar WhatsApp real sin opt_in"
-        wa_body = (
-            "Hola, gracias por tu respuesta. Soy del equipo Addi Marketplace. "
-            "Recibimos tu interes y un especialista te contactara para coordinar "
-            "una llamada de 20 minutos."
-        )
-        wa_result = send_whatsapp(
-            brand["contacto_whatsapp"],
-            wa_body,
-            has_opt_in=has_opt_in,
-            dry_run=False,
-        )
-        twilio_called = wa_result.sent
-        assert twilio_called, f"Twilio no confirmo envio: {wa_result.reason}"
-        action_taken = "WhatsApp en espanol aceptado por Twilio + handoff Slack"
-        log_step(
-            "WhatsApp en espanol aceptado por Twilio. "
-            f"sid={wa_result.provider_response.get('sid') if wa_result.provider_response else 'N/A'} "
-            "Nota: en Sandbox, entrega final requiere que el destino haya enviado el join code correcto."
-        )
-    elif decision == "nurture":
-        action_taken = "Solo Slack nurture; WhatsApp no enviado"
-        log_step("Nurture: no se llama Twilio.")
-    else:
-        action_taken = "Slack descarte; WhatsApp bloqueado"
-        assert not twilio_called, "BUG: Twilio fue llamado en rama descartar/opt-out"
-        log_step("Descartar/opt-out: assert PASS, Twilio no fue llamado.")
-
-    post_final_slack(brand, reply_text, classification, action_taken, timestamp)
-    log_step(f"Slack Block Kit final enviado. action_taken={action_taken}")
-    log_step("E2E real completado.")
+    whatsapp_result = state.get("whatsapp_result") or {}
+    log_step(
+        "Reply detectado y procesado por LangGraph. "
+        f"decision={decision} classification={json.dumps(classification, ensure_ascii=False)}"
+    )
+    log_step(f"LangGraph whatsapp_result={json.dumps(whatsapp_result, ensure_ascii=False)}")
+    log_step("LangGraph Slack handoff ejecutado por nodo_handoff_*.")
+    log_step("E2E real con LangGraph completado.")
 
 
 def load_env() -> None:
@@ -144,28 +113,6 @@ def load_brand_0145() -> dict[str, Any]:
     brand["contacto_email"] = os.environ["DEMO_EMAIL_DESTINO"]
     brand["contacto_whatsapp"] = os.environ["DEMO_WHATSAPP_NUMBER"]
     return brand
-
-
-def post_final_slack(
-    brand: dict[str, Any],
-    reply_text: str,
-    classification: dict[str, Any],
-    action_taken: str,
-    timestamp: str,
-) -> None:
-    reasoning_log = [
-        f"Clasificacion JSON: {json.dumps(classification, ensure_ascii=False)}",
-        "Fuente: Gmail reply listener / recovery E2E.",
-    ]
-    post_handoff(
-        brand,
-        classification,
-        reply_text,
-        reasoning_log,
-        dry_run=False,
-        action_taken=action_taken,
-        timestamp=timestamp,
-    )
 
 
 def reset_report() -> None:

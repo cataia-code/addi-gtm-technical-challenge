@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 
 from src.db import repository
 from src.handoff.slack_service import post_handoff
 from src.outreach.email_service import send_email_d0
+from src.outreach.whatsapp_service import send_whatsapp
 from src.qualification.llm_qualifier import classify_reply
 
 from .state import GTMState, append_log
@@ -98,11 +100,19 @@ def nodo_router(state: GTMState) -> GTMState:
 
 
 def nodo_handoff_agendar(state: GTMState) -> GTMState:
+    whatsapp_result = state.get("whatsapp_result") or {}
     post_handoff(
         state["brand_data"],
         state["clasificacion"] or {},
         state.get("reply_recibido") or "",
         state["log_razonamiento"],
+        dry_run=_is_dry_run(state),
+        action_taken=(
+            f"WhatsApp {whatsapp_result.get('status', 'pendiente')} + handoff Slack"
+            if whatsapp_result
+            else "Handoff Slack agendar"
+        ),
+        timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_agendar: handoff Hunter preparado en Slack; SLA sugerido <24h.")
     return state
@@ -114,6 +124,9 @@ def nodo_handoff_nurture(state: GTMState) -> GTMState:
         state["clasificacion"] or {},
         state.get("reply_recibido") or "",
         state["log_razonamiento"],
+        dry_run=_is_dry_run(state),
+        action_taken="Nurture: Slack sin WhatsApp",
+        timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_nurture: lead queda en nurture; no se genera WhatsApp.")
     return state
@@ -131,6 +144,9 @@ def nodo_handoff_descarte(state: GTMState) -> GTMState:
         classification,
         state.get("reply_recibido") or "",
         state["log_razonamiento"],
+        dry_run=_is_dry_run(state),
+        action_taken="Descarte/opt-out: WhatsApp bloqueado",
+        timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_descarte: descarte documentado en Slack.")
     return state
@@ -155,8 +171,53 @@ def route_after_router(state: GTMState) -> str:
     return "__end__"
 
 
+def nodo_enviar_whatsapp_agendar(state: GTMState) -> GTMState:
+    classification = state.get("clasificacion") or {}
+    brand = state["brand_data"]
+    if classification.get("suggested_action") != "agendar":
+        append_log(state, "nodo_enviar_whatsapp_agendar: no es agendar; WhatsApp omitido.")
+        return state
+    if bool(classification.get("es_opt_out")):
+        append_log(state, "nodo_enviar_whatsapp_agendar: opt-out detectado; WhatsApp bloqueado.")
+        state["whatsapp_result"] = {"sent": False, "status": "blocked_opt_out"}
+        return state
+
+    has_opt_in = repository.has_opt_in(brand["brand_id"], "whatsapp")
+    if not has_opt_in:
+        append_log(state, "nodo_enviar_whatsapp_agendar: sin opt_in; WhatsApp bloqueado.")
+        state["whatsapp_result"] = {"sent": False, "status": "blocked_no_opt_in"}
+        return state
+
+    body = (
+        "Hola, gracias por tu respuesta. Soy del equipo Addi Marketplace. "
+        "Recibimos tu interes y un especialista te contactara para coordinar "
+        "una llamada de 20 minutos."
+    )
+    result = send_whatsapp(
+        brand["contacto_whatsapp"],
+        body,
+        has_opt_in=has_opt_in,
+        dry_run=_is_dry_run(state),
+    )
+    provider = result.provider_response or {}
+    state["whatsapp_result"] = {
+        "sent": result.sent,
+        "status": provider.get("status") or result.reason,
+        "sid": provider.get("sid"),
+        "error_code": provider.get("error_code"),
+    }
+    append_log(
+        state,
+        f"nodo_enviar_whatsapp_agendar: WhatsApp status={state['whatsapp_result']['status']} sid={state['whatsapp_result'].get('sid')}",
+    )
+    return state
+
+
+def _is_dry_run(state: GTMState) -> bool:
+    return bool(state.get("dry_run", True))
+
+
 def _is_opt_out(reply: str) -> bool:
     normalized = reply.lower()
     tokens = ["no me escrib", "no contactar", "no me vuelvan", "unsubscribe", "opt-out"]
     return any(token in normalized for token in tokens)
-

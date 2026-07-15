@@ -9,6 +9,7 @@ from .nodes import (
     nodo_chequeo_duplicado,
     nodo_clasificar_reply,
     nodo_enviar_email,
+    nodo_enviar_whatsapp_agendar,
     nodo_handoff_agendar,
     nodo_handoff_descarte,
     nodo_handoff_nurture,
@@ -65,3 +66,44 @@ def build_graph():
 
 compiled_graph = build_graph()
 
+
+def build_reply_graph():
+    graph = StateGraph(GTMState)
+    graph.add_node("nodo_clasificar_reply", nodo_clasificar_reply)
+    graph.add_node("nodo_router", nodo_router)
+    graph.add_node("nodo_enviar_whatsapp_agendar", nodo_enviar_whatsapp_agendar)
+    graph.add_node("nodo_handoff_agendar", nodo_handoff_agendar)
+    graph.add_node("nodo_handoff_nurture", nodo_handoff_nurture)
+    graph.add_node("nodo_handoff_descarte", nodo_handoff_descarte)
+
+    graph.add_edge(START, "nodo_clasificar_reply")
+    graph.add_edge("nodo_clasificar_reply", "nodo_router")
+    graph.add_conditional_edges(
+        "nodo_router",
+        route_after_router_for_reply,
+        {
+            "nodo_enviar_whatsapp_agendar": "nodo_enviar_whatsapp_agendar",
+            "nodo_handoff_nurture": "nodo_handoff_nurture",
+            "nodo_handoff_descarte": "nodo_handoff_descarte",
+            "__end__": END,
+        },
+    )
+    graph.add_edge("nodo_enviar_whatsapp_agendar", "nodo_handoff_agendar")
+    graph.add_edge("nodo_handoff_agendar", END)
+    graph.add_edge("nodo_handoff_nurture", END)
+    graph.add_edge("nodo_handoff_descarte", END)
+    return graph.compile()
+
+
+def route_after_router_for_reply(state: GTMState) -> str:
+    decision = state.get("decision")
+    if decision == "agendar":
+        return "nodo_enviar_whatsapp_agendar"
+    if decision == "nurture":
+        return "nodo_handoff_nurture"
+    if decision == "descartar":
+        return "nodo_handoff_descarte"
+    return "__end__"
+
+
+compiled_reply_graph = build_reply_graph()

@@ -21,6 +21,8 @@ def wait_for_reply_and_classify(
     timeout_seconds: int = 900,
     after_epoch_ms: int | None = None,
     allow_sent_demo_fallback: bool = False,
+    process_with_langgraph: bool = False,
+    dry_run: bool = True,
 ) -> GTMState:
     """Poll Gmail for an unread reply in a thread and classify it."""
 
@@ -41,7 +43,13 @@ def wait_for_reply_and_classify(
                 "clasificacion": None,
                 "decision": "",
                 "log_razonamiento": [],
+                "dry_run": dry_run,
+                "whatsapp_result": None,
             }
+            if process_with_langgraph:
+                from src.agents.graph import compiled_reply_graph
+
+                return compiled_reply_graph.invoke(state)
             nodo_clasificar_reply(state)
             nodo_router(state)
             return state
