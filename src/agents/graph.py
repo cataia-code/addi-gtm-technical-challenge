@@ -1,78 +1,67 @@
-"""LangGraph assembly with a local fallback runner."""
+"""LangGraph assembly for the GTM agent."""
 
 from __future__ import annotations
 
+from langgraph.graph import END, START, StateGraph
+
 from .nodes import (
-    agente_sdr_clasificacion,
-    agente_sdr_outreach,
-    brief_hunter,
-    chequeo_duplicado,
-    handoff_descarte,
-    handoff_hunter,
-    handoff_nurture,
-    route_after_classification,
+    nodo_brief_hunter,
+    nodo_chequeo_duplicado,
+    nodo_clasificar_reply,
+    nodo_enviar_email,
+    nodo_handoff_agendar,
+    nodo_handoff_descarte,
+    nodo_handoff_nurture,
+    nodo_router,
     route_after_duplicate,
-    route_after_tier,
+    route_after_router,
+    route_by_tier,
 )
 from .state import GTMState
 
 
 def build_graph():
-    try:
-        from langgraph.graph import END, StateGraph
-    except ImportError:
-        return None
-
     graph = StateGraph(GTMState)
-    graph.add_node("brief_hunter", brief_hunter)
-    graph.add_node("chequeo_duplicado", chequeo_duplicado)
-    graph.add_node("agente_sdr_outreach", agente_sdr_outreach)
-    graph.add_node("agente_sdr_clasificacion", agente_sdr_clasificacion)
-    graph.add_node("handoff_hunter", handoff_hunter)
-    graph.add_node("handoff_nurture", handoff_nurture)
-    graph.add_node("handoff_descarte", handoff_descarte)
+    graph.add_node("nodo_brief_hunter", nodo_brief_hunter)
+    graph.add_node("nodo_chequeo_duplicado", nodo_chequeo_duplicado)
+    graph.add_node("nodo_enviar_email", nodo_enviar_email)
+    graph.add_node("nodo_clasificar_reply", nodo_clasificar_reply)
+    graph.add_node("nodo_router", nodo_router)
+    graph.add_node("nodo_handoff_agendar", nodo_handoff_agendar)
+    graph.add_node("nodo_handoff_nurture", nodo_handoff_nurture)
+    graph.add_node("nodo_handoff_descarte", nodo_handoff_descarte)
 
-    graph.set_conditional_entry_point(
-        route_after_tier,
-        {"brief_hunter": "brief_hunter", "chequeo_duplicado": "chequeo_duplicado"},
-    )
     graph.add_conditional_edges(
-        "chequeo_duplicado",
-        route_after_duplicate,
-        {"agente_sdr_outreach": "agente_sdr_outreach", "end": END},
-    )
-    graph.add_edge("agente_sdr_outreach", "agente_sdr_clasificacion")
-    graph.add_conditional_edges(
-        "agente_sdr_clasificacion",
-        route_after_classification,
+        START,
+        route_by_tier,
         {
-            "handoff_hunter": "handoff_hunter",
-            "handoff_nurture": "handoff_nurture",
-            "handoff_descarte": "handoff_descarte",
-            "end": END,
+            "nodo_brief_hunter": "nodo_brief_hunter",
+            "nodo_chequeo_duplicado": "nodo_chequeo_duplicado",
         },
     )
-    graph.add_edge("brief_hunter", END)
-    graph.add_edge("handoff_hunter", END)
-    graph.add_edge("handoff_nurture", END)
-    graph.add_edge("handoff_descarte", END)
+    graph.add_edge("nodo_brief_hunter", END)
+    graph.add_conditional_edges(
+        "nodo_chequeo_duplicado",
+        route_after_duplicate,
+        {"nodo_enviar_email": "nodo_enviar_email", "__end__": END},
+    )
+    graph.add_edge("nodo_enviar_email", "nodo_clasificar_reply")
+    graph.add_edge("nodo_clasificar_reply", "nodo_router")
+    graph.add_conditional_edges(
+        "nodo_router",
+        route_after_router,
+        {
+            "nodo_handoff_agendar": "nodo_handoff_agendar",
+            "nodo_handoff_nurture": "nodo_handoff_nurture",
+            "nodo_handoff_descarte": "nodo_handoff_descarte",
+            "__end__": END,
+        },
+    )
+    graph.add_edge("nodo_handoff_agendar", END)
+    graph.add_edge("nodo_handoff_nurture", END)
+    graph.add_edge("nodo_handoff_descarte", END)
     return graph.compile()
 
 
-def run_local(state: GTMState) -> GTMState:
-    if route_after_tier(state) == "brief_hunter":
-        return brief_hunter(state)
-    chequeo_duplicado(state)
-    if route_after_duplicate(state) == "end":
-        return state
-    agente_sdr_outreach(state)
-    agente_sdr_clasificacion(state)
-    next_node = route_after_classification(state)
-    if next_node == "handoff_hunter":
-        return handoff_hunter(state)
-    if next_node == "handoff_nurture":
-        return handoff_nurture(state)
-    if next_node == "handoff_descarte":
-        return handoff_descarte(state)
-    return state
+compiled_graph = build_graph()
 
