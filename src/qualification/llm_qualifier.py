@@ -3,32 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import requests
 
 
+LOGGER = logging.getLogger(__name__)
 ALLOWED_ACTIONS = {"agendar", "nurture", "descartar"}
-
-
-QUALIFIER_PROMPT = """Eres el clasificador de leads de Addi Marketplace.
-Responde SOLO JSON puro con este schema:
-{
-  "intent_score": <0-100>,
-  "is_decision_maker": <true|false>,
-  "objection_type": <"precio"|"integracion"|"tiempo"|"competidor"|null>,
-  "suggested_action": <"agendar"|"nurture"|"descartar">,
-  "reasoning": "<una frase corta>"
-}
-
-Reglas:
-- 70-100: interes claro, suggested_action="agendar"
-- 40-69: interes parcial u objecion, suggested_action="nurture"
-- 0-39: rechazo u opt-out, suggested_action="descartar"
-- Si el merchant pide no ser contactado, suggested_action="descartar"
-"""
+PROMPT_PATH = Path(__file__).resolve().parent / "qualifier_prompt.md"
 
 
 @dataclass(frozen=True)
@@ -49,6 +35,10 @@ class Qualification:
         }
 
 
+def load_prompt(prompt_path: Path = PROMPT_PATH) -> str:
+    return prompt_path.read_text(encoding="utf-8")
+
+
 def normalize_action(raw_action: str | None, intent_score: int) -> str:
     if raw_action:
         action = raw_action.strip().lower()
@@ -63,7 +53,12 @@ def normalize_action(raw_action: str | None, intent_score: int) -> str:
 
 def parse_qualification(raw_json: str) -> Qualification:
     clean = raw_json.replace("```json", "").replace("```", "").strip()
-    payload = json.loads(clean)
+    try:
+        payload = json.loads(clean)
+    except json.JSONDecodeError:
+        LOGGER.exception("Groq response was not valid JSON. raw=%r", raw_json)
+        raise
+
     intent_score = int(max(0, min(100, payload.get("intent_score", 0))))
     action = normalize_action(payload.get("suggested_action"), intent_score)
     return Qualification(
@@ -94,8 +89,8 @@ def classify_reply(
         json={
             "model": model,
             "messages": [
-                {"role": "system", "content": QUALIFIER_PROMPT},
-                {"role": "user", "content": f"Contexto: {context}\nReply: {reply_text}"},
+                {"role": "system", "content": load_prompt()},
+                {"role": "user", "content": f"Contexto:\n{context}\n\nReply recibido:\n{reply_text}"},
             ],
             "temperature": 0,
             "max_tokens": 250,

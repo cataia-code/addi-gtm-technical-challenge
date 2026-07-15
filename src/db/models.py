@@ -15,30 +15,25 @@ CREATE TABLE IF NOT EXISTS leads (
     brand_id TEXT PRIMARY KEY,
     category TEXT,
     gmv_cop_millions_12m REAL,
-    final_score REAL,
     tier TEXT,
+    contacto_email TEXT,
+    contacto_whatsapp TEXT,
+    thread_id TEXT,
     contactado_en TEXT
 );
 
 CREATE TABLE IF NOT EXISTS replies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    brand_id TEXT NOT NULL,
-    texto_reply TEXT NOT NULL,
-    timestamp TEXT NOT NULL,
+    brand_id TEXT,
+    texto_reply TEXT,
+    timestamp TEXT,
     clasificacion_json TEXT
 );
 
 CREATE TABLE IF NOT EXISTS opt_ins (
-    brand_id TEXT NOT NULL,
-    canal TEXT NOT NULL,
-    otorgado_en TEXT NOT NULL,
-    PRIMARY KEY (brand_id, canal)
-);
-
-CREATE TABLE IF NOT EXISTS contact_log (
-    brand_id TEXT PRIMARY KEY,
-    contacted_at TEXT NOT NULL,
-    channel TEXT NOT NULL
+    brand_id TEXT,
+    canal TEXT,
+    otorgado_en TEXT
 );
 """
 
