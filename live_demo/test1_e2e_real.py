@@ -110,7 +110,7 @@ def load_env() -> None:
     env_path = ROOT / ".env"
     if not env_path.exists():
         return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
+    for line in env_path.read_text(encoding="utf-8-sig").splitlines():
         if not line or line.strip().startswith("#") or "=" not in line:
             continue
         key, value = line.split("=", 1)
@@ -186,4 +186,3 @@ def log_step(message: str) -> None:
 
 if __name__ == "__main__":
     main()
-

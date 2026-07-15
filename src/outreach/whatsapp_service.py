@@ -40,5 +40,6 @@ def send_whatsapp(
         auth=(account_sid, auth_token),
         timeout=20,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise RuntimeError(f"Twilio WhatsApp error {response.status_code}: {response.text}")
     return WhatsAppResult(sent=True, reason="sent", provider_response=response.json())
