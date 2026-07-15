@@ -55,13 +55,13 @@ def main() -> None:
     repository.grant_opt_in(brand["brand_id"], "whatsapp")
     log_step("Lead insertado en SQLite y opt_in WhatsApp registrado.")
 
+    sent_after_epoch_ms = int(time.time() * 1000)
     email_result = send_email_d0(
         brand,
         brand["contacto_email"],
         reply_to=os.environ.get("DEMO_REPLY_TO_EMAIL"),
         dry_run=False,
     )
-    sent_after_epoch_ms = int(time.time() * 1000)
     thread_id = email_result["threadId"]
     repository.upsert_lead(brand["brand_id"], thread_id=thread_id)
     repository.mark_contacted(brand["brand_id"], thread_id=thread_id)
@@ -73,6 +73,7 @@ def main() -> None:
         brand_data=brand,
         poll_seconds=15,
         after_epoch_ms=sent_after_epoch_ms,
+        allow_sent_demo_fallback=True,
     )
     reply_text = state.get("reply_recibido") or ""
     classification = state.get("clasificacion") or {}

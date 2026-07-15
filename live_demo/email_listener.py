@@ -20,6 +20,7 @@ def wait_for_reply_and_classify(
     poll_seconds: int = 15,
     timeout_seconds: int = 900,
     after_epoch_ms: int | None = None,
+    allow_sent_demo_fallback: bool = False,
 ) -> GTMState:
     """Poll Gmail for an unread reply in a thread and classify it."""
 
@@ -28,6 +29,8 @@ def wait_for_reply_and_classify(
 
     while time.time() < deadline:
         message = _find_unread_message_in_thread(service, thread_id, after_epoch_ms=after_epoch_ms)
+        if not message and allow_sent_demo_fallback:
+            message = _find_recent_demo_reply(service, brand_data, after_epoch_ms=after_epoch_ms)
         if message:
             reply_text = extract_message_text(message)
             state: GTMState = {
@@ -71,6 +74,44 @@ def _find_unread_message_in_thread(
         if _is_target_reply(message, thread_id, after_epoch_ms=after_epoch_ms):
             return message
     return None
+
+
+def _find_recent_demo_reply(
+    service,
+    brand_data: dict[str, Any],
+    *,
+    after_epoch_ms: int | None = None,
+) -> dict[str, Any] | None:
+    """Self-test fallback: Gmail Compose can create a sent message in a new thread."""
+
+    brand_id = str(brand_data.get("brand_id", ""))
+    query = f'newer_than:1d "{brand_id}"'
+    listed = service.users().messages().list(userId="me", q=query, maxResults=10).execute()
+    candidates = []
+    for item in listed.get("messages", []):
+        message = service.users().messages().get(userId="me", id=item["id"], format="full").execute()
+        if _looks_like_demo_reply(message, brand_id, after_epoch_ms=after_epoch_ms):
+            candidates.append(message)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda msg: int(msg.get("internalDate", "0")))
+
+
+def _looks_like_demo_reply(
+    message: dict[str, Any],
+    brand_id: str,
+    *,
+    after_epoch_ms: int | None = None,
+) -> bool:
+    if after_epoch_ms is not None and int(message.get("internalDate", "0")) < after_epoch_ms:
+        return False
+    text = extract_message_text(message)
+    normalized = text.lower()
+    if brand_id.lower() not in normalized:
+        return False
+    if "notamos que" in normalized and "tus clientes ya usan" in normalized:
+        return False
+    return any(token in normalized for token in ["si me interesa", "sí me interesa", "agendar", "opcion", "opción"])
 
 
 def _is_target_reply(message: dict[str, Any], thread_id: str, *, after_epoch_ms: int | None = None) -> bool:

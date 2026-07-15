@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -30,8 +30,25 @@ def render_template(template: str, values: dict[str, Any]) -> str:
 
 def build_email_html(brand: dict[str, Any], reply_to: str) -> str:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    values = {**brand, "reply_to": reply_to, "cta_mailto": build_cta_mailto(brand, reply_to)}
+    values = {**brand, "reply_to": reply_to, "cta_mailto": build_cta_href(brand, reply_to)}
     return render_template(template, values)
+
+
+def build_cta_href(brand: dict[str, Any], reply_to: str) -> str:
+    subject = f"Re: Addi Marketplace - {brand.get('brand_id', '')}"
+    body = (
+        "Hola equipo Addi,\n\n"
+        "Si me interesa revisar la oportunidad de Addi Marketplace.\n\n"
+        "Mis horarios sugeridos para una llamada de 20 minutos son:\n"
+        "- Opcion 1: \n"
+        "- Opcion 2: \n"
+        "- Opcion 3: \n\n"
+        f"Contexto: {brand.get('brand_id', '')} | {brand.get('category', '')} | "
+        f"GMV 12m COP {brand.get('gmv_cop_millions_12m', '')} MM.\n\n"
+        "Saludos,"
+    )
+    query = urlencode({"view": "cm", "fs": "1", "to": reply_to, "su": subject, "body": body})
+    return f"https://mail.google.com/mail/?{query}"
 
 
 def build_cta_mailto(brand: dict[str, Any], reply_to: str) -> str:
