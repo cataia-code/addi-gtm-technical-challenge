@@ -26,7 +26,11 @@ def load_universo(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
     return pd.read_excel(dataset_path, sheet_name="universo_potencial")
 
 
-def compute_top50(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
+def calcular_score(
+    dataset_path: Path = DATASET_PATH,
+    *,
+    weights: dict[str, float] | None = None,
+) -> pd.DataFrame:
     universo = load_universo(dataset_path)
     opp = universo[
         (universo["is_marketplace_today"] == 0)
@@ -57,11 +61,19 @@ def compute_top50(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
     )
     tier_b_pool["recency_score"] = np.exp(-tier_b_pool["days_since_last_orig"] / 30) * 100
     tier_b_pool["category_bonus"] = tier_b_pool["category"].map(_category_bonus_map(universo)).fillna(0)
+    score_weights = {
+        "fit": 0.55,
+        "momentum": 0.25,
+        "recency": 0.05,
+        "category_bonus": 1.0,
+    }
+    if weights:
+        score_weights.update(weights)
     tier_b_pool["final_score"] = (
-        tier_b_pool["fit_score"] * 0.55
-        + tier_b_pool["momentum_score"] * 0.25
-        + tier_b_pool["recency_score"] * 0.05
-        + tier_b_pool["category_bonus"]
+        tier_b_pool["fit_score"] * score_weights["fit"]
+        + tier_b_pool["momentum_score"] * score_weights["momentum"]
+        + tier_b_pool["recency_score"] * score_weights["recency"]
+        + tier_b_pool["category_bonus"] * score_weights["category_bonus"]
     )
 
     tier_b = _select_top_with_category_cap(
@@ -72,6 +84,10 @@ def compute_top50(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
     tier_b["tier"] = "B"
 
     return _export_shape(tier_a, tier_b)
+
+
+def compute_top50(dataset_path: Path = DATASET_PATH) -> pd.DataFrame:
+    return calcular_score(dataset_path)
 
 
 def validate_scoring(dataset_path: Path = DATASET_PATH, top50_path: Path = TOP50_PATH):
