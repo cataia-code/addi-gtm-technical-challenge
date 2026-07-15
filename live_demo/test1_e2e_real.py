@@ -36,6 +36,7 @@ def main() -> None:
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
         "TWILIO_WHATSAPP_FROM",
+        "TWILIO_CONTENT_SID",
     )
 
     reset_report()
@@ -87,6 +88,7 @@ def main() -> None:
             wa_body,
             has_opt_in=has_opt_in,
             dry_run=False,
+            content_variables={"1": "12/1", "2": "3pm"},
         )
         twilio_called = wa_result.sent
         assert twilio_called, f"Twilio no confirmó envío: {wa_result.reason}"

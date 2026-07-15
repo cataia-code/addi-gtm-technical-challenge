@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 from dataclasses import dataclass
 
 import requests
@@ -21,6 +22,8 @@ def send_whatsapp(
     *,
     has_opt_in: bool,
     dry_run: bool = True,
+    content_sid: str | None = None,
+    content_variables: dict[str, str] | None = None,
 ) -> WhatsAppResult:
     if not has_opt_in:
         return WhatsAppResult(sent=False, reason="blocked_no_opt_in")
@@ -30,13 +33,21 @@ def send_whatsapp(
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
     from_number = os.environ.get("TWILIO_WHATSAPP_FROM")
-    if not all([account_sid, auth_token, from_number]):
+    content_sid = content_sid or os.environ.get("TWILIO_CONTENT_SID")
+    content_variables = content_variables or {"1": "12/1", "2": "3pm"}
+    if not all([account_sid, auth_token, from_number, content_sid]):
         raise RuntimeError("Twilio env vars are required for live WhatsApp")
 
+    to_whatsapp = to_number if to_number.startswith("whatsapp:") else f"whatsapp:{to_number}"
     url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
     response = requests.post(
         url,
-        data={"From": from_number, "To": f"whatsapp:{to_number}", "Body": body},
+        data={
+            "From": from_number,
+            "To": to_whatsapp,
+            "ContentSid": content_sid,
+            "ContentVariables": json.dumps(content_variables, separators=(",", ":")),
+        },
         auth=(account_sid, auth_token),
         timeout=20,
     )
