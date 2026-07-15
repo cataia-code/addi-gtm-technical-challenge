@@ -27,6 +27,7 @@ def send_whatsapp(
     dry_run: bool = True,
     content_sid: str | None = None,
     content_variables: dict[str, str] | None = None,
+    use_content_template: bool | None = None,
 ) -> WhatsAppResult:
     if not has_opt_in:
         return WhatsAppResult(sent=False, reason="blocked_no_opt_in")
@@ -36,21 +37,35 @@ def send_whatsapp(
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
     from_number = os.environ.get("TWILIO_WHATSAPP_FROM")
-    content_sid = content_sid or os.environ.get("TWILIO_CONTENT_SID")
-    content_variables = content_variables or {"1": "12/1", "2": "3pm"}
-    if not all([account_sid, auth_token, from_number, content_sid]):
+    use_content_template = (
+        use_content_template
+        if use_content_template is not None
+        else os.environ.get("TWILIO_USE_CONTENT_TEMPLATE", "false").lower() == "true"
+    )
+    if not all([account_sid, auth_token, from_number]):
         raise RuntimeError("Twilio env vars are required for live WhatsApp")
     if Client is None:
         raise RuntimeError("Install the Twilio SDK before sending WhatsApp: pip install twilio")
 
     to_whatsapp = to_number if to_number.startswith("whatsapp:") else f"whatsapp:{to_number}"
     client = Client(account_sid, auth_token)
-    message = client.messages.create(
-        from_=from_number,
-        content_sid=content_sid,
-        content_variables=json.dumps(content_variables, separators=(",", ":")),
-        to=to_whatsapp,
-    )
+    if use_content_template:
+        content_sid = content_sid or os.environ.get("TWILIO_CONTENT_SID")
+        content_variables = content_variables or {"1": "12/1", "2": "3pm"}
+        if not content_sid:
+            raise RuntimeError("TWILIO_CONTENT_SID is required when use_content_template=True")
+        message = client.messages.create(
+            from_=from_number,
+            content_sid=content_sid,
+            content_variables=json.dumps(content_variables, separators=(",", ":")),
+            to=to_whatsapp,
+        )
+    else:
+        message = client.messages.create(
+            from_=from_number,
+            body=body,
+            to=to_whatsapp,
+        )
     return WhatsAppResult(sent=True, reason="sent", provider_response=_message_to_dict(message))
 
 

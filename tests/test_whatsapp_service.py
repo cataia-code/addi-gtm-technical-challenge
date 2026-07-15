@@ -34,7 +34,33 @@ class _Client:
 
 
 class WhatsAppServiceTest(unittest.TestCase):
-    def test_send_whatsapp_uses_twilio_content_template(self):
+    def test_send_whatsapp_uses_body_by_default(self):
+        env = {
+            "TWILIO_ACCOUNT_SID": "AC_test",
+            "TWILIO_AUTH_TOKEN": "token",
+            "TWILIO_WHATSAPP_FROM": "whatsapp:+14155238886",
+        }
+        _Client.captured = {}
+
+        with patch.dict(os.environ, env), patch("src.outreach.whatsapp_service.Client", _Client):
+            result = send_whatsapp(
+                "+573228250742",
+                "Hola, gracias por tu respuesta.",
+                has_opt_in=True,
+                dry_run=False,
+            )
+
+        self.assertTrue(result.sent)
+        self.assertEqual(
+            _Client.captured,
+            {
+                "from_": "whatsapp:+14155238886",
+                "to": "whatsapp:+573228250742",
+                "body": "Hola, gracias por tu respuesta.",
+            },
+        )
+
+    def test_send_whatsapp_uses_twilio_content_template_when_requested(self):
         env = {
             "TWILIO_ACCOUNT_SID": "AC_test",
             "TWILIO_AUTH_TOKEN": "token",
@@ -50,6 +76,7 @@ class WhatsAppServiceTest(unittest.TestCase):
                 has_opt_in=True,
                 dry_run=False,
                 content_variables={"1": "12/1", "2": "3pm"},
+                use_content_template=True,
             )
 
         self.assertTrue(result.sent)

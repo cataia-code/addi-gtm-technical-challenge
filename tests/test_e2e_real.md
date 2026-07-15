@@ -10,3 +10,5 @@
 - `2026-07-15T17:12:00` Verificacion Twilio fetch: sid=MM6f800a9443bab1fd7869dac3829cdc0a status=delivered error_code=None error_message=None
 - `2026-07-15T17:11:44` Slack Block Kit final enviado. action_taken=WhatsApp template enviado via Twilio SDK + handoff Slack
 - `2026-07-15T17:11:44` Recuperacion E2E completada.
+- `2026-07-15T17:23:00` Correccion: email HTML reenviado con CTA Gmail Compose corregido. message_id=19f67dafafa37a6d thread_id=19f67dafafa37a6d
+- `2026-07-15T17:23:08` Correccion: WhatsApp en espanol enviado por Body via Twilio SDK. sid=SM2aa3d81bfed1cbf6d323f8d8e9b89810 status=delivered error_code=None

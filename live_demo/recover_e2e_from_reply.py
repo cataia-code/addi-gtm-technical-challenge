@@ -44,14 +44,18 @@ def main() -> None:
     if decision == "agendar":
         has_opt_in = repository.has_opt_in(brand["brand_id"], "whatsapp")
         assert has_opt_in, "No se puede enviar WhatsApp real sin opt_in"
+        wa_body = (
+            "Hola, gracias por tu respuesta. Soy del equipo Addi Marketplace. "
+            "Recibimos tu interes y un especialista te contactara para coordinar "
+            "una llamada de 20 minutos."
+        )
         wa_result = send_whatsapp(
             brand["contacto_whatsapp"],
-            "ignored when ContentSid is used",
+            wa_body,
             has_opt_in=has_opt_in,
             dry_run=False,
-            content_variables={"1": "12/1", "2": "3pm"},
         )
-        action_taken = "WhatsApp template enviado via Twilio SDK + handoff Slack"
+        action_taken = "WhatsApp en espanol enviado via Twilio SDK + handoff Slack"
         log_step(
             "WhatsApp enviado via Twilio SDK. "
             f"sid={wa_result.provider_response.get('sid') if wa_result.provider_response else 'N/A'} "

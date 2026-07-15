@@ -37,7 +37,6 @@ def main() -> None:
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
         "TWILIO_WHATSAPP_FROM",
-        "TWILIO_CONTENT_SID",
     )
 
     reset_report()
@@ -88,21 +87,21 @@ def main() -> None:
         has_opt_in = repository.has_opt_in(brand["brand_id"], "whatsapp")
         assert has_opt_in, "No se puede enviar WhatsApp real sin opt_in"
         wa_body = (
-            "Gracias por tu respuesta. Un especialista de Addi Marketplace te contactará "
-            "para coordinar la llamada de 20 minutos."
+            "Hola, gracias por tu respuesta. Soy del equipo Addi Marketplace. "
+            "Recibimos tu interes y un especialista te contactara para coordinar "
+            "una llamada de 20 minutos."
         )
         wa_result = send_whatsapp(
             brand["contacto_whatsapp"],
             wa_body,
             has_opt_in=has_opt_in,
             dry_run=False,
-            content_variables={"1": "12/1", "2": "3pm"},
         )
         twilio_called = wa_result.sent
-        assert twilio_called, f"Twilio no confirmó envío: {wa_result.reason}"
-        action_taken = "WhatsApp aceptado por Twilio + handoff Slack"
+        assert twilio_called, f"Twilio no confirmo envio: {wa_result.reason}"
+        action_taken = "WhatsApp en espanol aceptado por Twilio + handoff Slack"
         log_step(
-            "WhatsApp aceptado por Twilio. "
+            "WhatsApp en espanol aceptado por Twilio. "
             f"sid={wa_result.provider_response.get('sid') if wa_result.provider_response else 'N/A'} "
             "Nota: en Sandbox, entrega final requiere que el destino haya enviado el join code correcto."
         )
@@ -111,7 +110,6 @@ def main() -> None:
         log_step("Nurture: no se llama Twilio.")
     else:
         action_taken = "Slack descarte; WhatsApp bloqueado"
-        # Assert explícito de compliance: en descarte/opt-out no se llama Twilio.
         assert not twilio_called, "BUG: Twilio fue llamado en rama descartar/opt-out"
         log_step("Descartar/opt-out: assert PASS, Twilio no fue llamado.")
 
@@ -176,10 +174,10 @@ def post_final_slack(
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": f"*Clasificación JSON:*\n```{json.dumps(classification, ensure_ascii=False, indent=2)}```",
+                    "text": f"*Clasificacion JSON:*\n```{json.dumps(classification, ensure_ascii=False, indent=2)}```",
                 },
             },
-            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Acción tomada:*\n{action_taken}"}},
+            {"type": "section", "text": {"type": "mrkdwn", "text": f"*Accion tomada:*\n{action_taken}"}},
         ],
     }
     response = requests.post(os.environ["SLACK_WEBHOOK_URL"], json=payload, timeout=15)
