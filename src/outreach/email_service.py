@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -37,11 +38,11 @@ def build_cta_mailto(brand: dict[str, Any], reply_to: str) -> str:
     subject = f"Re: Addi Marketplace - {brand.get('brand_id', '')}"
     body = (
         "Hola equipo Addi,\n\n"
-        "Sí me interesa revisar la oportunidad de Addi Marketplace.\n\n"
+        "Si me interesa revisar la oportunidad de Addi Marketplace.\n\n"
         "Mis horarios sugeridos para una llamada de 20 minutos son:\n"
-        "- Opción 1: \n"
-        "- Opción 2: \n"
-        "- Opción 3: \n\n"
+        "- Opcion 1: \n"
+        "- Opcion 2: \n"
+        "- Opcion 3: \n\n"
         f"Contexto: {brand.get('brand_id', '')} | {brand.get('category', '')} | "
         f"GMV 12m COP {brand.get('gmv_cop_millions_12m', '')} MM.\n\n"
         "Saludos,"
@@ -66,11 +67,20 @@ def get_gmail_service(
     return build("gmail", "v1", credentials=creds)
 
 
-def create_message(to_email: str, subject: str, html_body: str, text_body: str | None = None) -> dict[str, str]:
+def create_message(
+    to_email: str,
+    subject: str,
+    html_body: str,
+    text_body: str | None = None,
+    *,
+    reply_to: str | None = None,
+) -> dict[str, str]:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = "me"
     msg["To"] = to_email
+    if reply_to:
+        msg["Reply-To"] = reply_to
     if text_body:
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
@@ -82,13 +92,14 @@ def send_email_d0(
     brand: dict[str, Any],
     to_email: str,
     *,
-    reply_to: str,
+    reply_to: str | None = None,
     dry_run: bool = True,
 ) -> dict[str, Any]:
+    reply_to = reply_to or os.environ.get("DEMO_REPLY_TO_EMAIL") or os.environ.get("GMAIL_REPLY_TO_EMAIL") or to_email
     html = build_email_html(brand, reply_to=reply_to)
     subject = f"Addi Marketplace: oportunidad para {brand.get('category', 'tu categoria')}"
-    message = create_message(to_email, subject, html)
+    message = create_message(to_email, subject, html, reply_to=reply_to)
     if dry_run:
-        return {"dry_run": True, "subject": subject, "to": to_email, "html": html}
+        return {"dry_run": True, "subject": subject, "to": to_email, "reply_to": reply_to, "html": html}
     service = get_gmail_service()
     return service.users().messages().send(userId="me", body=message).execute()

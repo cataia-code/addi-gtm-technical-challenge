@@ -19,6 +19,7 @@ def wait_for_reply_and_classify(
     brand_data: dict[str, Any],
     poll_seconds: int = 15,
     timeout_seconds: int = 900,
+    after_epoch_ms: int | None = None,
 ) -> GTMState:
     """Poll Gmail for an unread reply in a thread and classify it."""
 
@@ -26,7 +27,7 @@ def wait_for_reply_and_classify(
     deadline = time.time() + timeout_seconds
 
     while time.time() < deadline:
-        message = _find_unread_message_in_thread(service, thread_id)
+        message = _find_unread_message_in_thread(service, thread_id, after_epoch_ms=after_epoch_ms)
         if message:
             reply_text = extract_message_text(message)
             state: GTMState = {
@@ -46,15 +47,20 @@ def wait_for_reply_and_classify(
     raise TimeoutError(f"No unread reply detected for Gmail thread_id={thread_id}")
 
 
-def _find_unread_message_in_thread(service, thread_id: str) -> dict[str, Any] | None:
+def _find_unread_message_in_thread(
+    service,
+    thread_id: str,
+    *,
+    after_epoch_ms: int | None = None,
+) -> dict[str, Any] | None:
     """Try Gmail search first, then fall back to threads.get."""
 
-    query = f"in:thread {thread_id} is:unread"
+    query = f"is:unread -from:me"
     try:
         listed = service.users().messages().list(userId="me", q=query).execute()
         for item in listed.get("messages", []):
             message = service.users().messages().get(userId="me", id=item["id"], format="full").execute()
-            if message.get("threadId") == thread_id and "UNREAD" in message.get("labelIds", []):
+            if _is_target_reply(message, thread_id, after_epoch_ms=after_epoch_ms):
                 return message
     except Exception:
         # Gmail search syntax can vary; threads.get is the reliable fallback by thread_id.
@@ -62,9 +68,20 @@ def _find_unread_message_in_thread(service, thread_id: str) -> dict[str, Any] | 
 
     thread = service.users().threads().get(userId="me", id=thread_id, format="full").execute()
     for message in thread.get("messages", []):
-        if "UNREAD" in message.get("labelIds", []):
+        if _is_target_reply(message, thread_id, after_epoch_ms=after_epoch_ms):
             return message
     return None
+
+
+def _is_target_reply(message: dict[str, Any], thread_id: str, *, after_epoch_ms: int | None = None) -> bool:
+    labels = set(message.get("labelIds", []))
+    if message.get("threadId") != thread_id:
+        return False
+    if "UNREAD" not in labels or "SENT" in labels:
+        return False
+    if after_epoch_ms is not None and int(message.get("internalDate", "0")) < after_epoch_ms:
+        return False
+    return True
 
 
 def extract_message_text(message: dict[str, Any]) -> str:

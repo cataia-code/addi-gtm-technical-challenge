@@ -6,7 +6,10 @@ import os
 import json
 from dataclasses import dataclass
 
-import requests
+try:
+    from twilio.rest import Client
+except ImportError:  # pragma: no cover - exercised only when dependency is missing.
+    Client = None
 
 
 @dataclass(frozen=True)
@@ -37,20 +40,27 @@ def send_whatsapp(
     content_variables = content_variables or {"1": "12/1", "2": "3pm"}
     if not all([account_sid, auth_token, from_number, content_sid]):
         raise RuntimeError("Twilio env vars are required for live WhatsApp")
+    if Client is None:
+        raise RuntimeError("Install the Twilio SDK before sending WhatsApp: pip install twilio")
 
     to_whatsapp = to_number if to_number.startswith("whatsapp:") else f"whatsapp:{to_number}"
-    url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-    response = requests.post(
-        url,
-        data={
-            "From": from_number,
-            "To": to_whatsapp,
-            "ContentSid": content_sid,
-            "ContentVariables": json.dumps(content_variables, separators=(",", ":")),
-        },
-        auth=(account_sid, auth_token),
-        timeout=20,
+    client = Client(account_sid, auth_token)
+    message = client.messages.create(
+        from_=from_number,
+        content_sid=content_sid,
+        content_variables=json.dumps(content_variables, separators=(",", ":")),
+        to=to_whatsapp,
     )
-    if not response.ok:
-        raise RuntimeError(f"Twilio WhatsApp error {response.status_code}: {response.text}")
-    return WhatsAppResult(sent=True, reason="sent", provider_response=response.json())
+    return WhatsAppResult(sent=True, reason="sent", provider_response=_message_to_dict(message))
+
+
+def _message_to_dict(message) -> dict:
+    return {
+        "sid": getattr(message, "sid", None),
+        "status": getattr(message, "status", None),
+        "error_code": getattr(message, "error_code", None),
+        "error_message": getattr(message, "error_message", None),
+        "to": getattr(message, "to", None),
+        "from": getattr(message, "from_", None) or getattr(message, "from", None),
+        "body": getattr(message, "body", None),
+    }

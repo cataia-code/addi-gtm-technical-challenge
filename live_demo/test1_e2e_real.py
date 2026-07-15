@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -57,16 +58,22 @@ def main() -> None:
     email_result = send_email_d0(
         brand,
         brand["contacto_email"],
-        reply_to=brand["contacto_email"],
+        reply_to=os.environ.get("DEMO_REPLY_TO_EMAIL"),
         dry_run=False,
     )
+    sent_after_epoch_ms = int(time.time() * 1000)
     thread_id = email_result["threadId"]
     repository.upsert_lead(brand["brand_id"], thread_id=thread_id)
     repository.mark_contacted(brand["brand_id"], thread_id=thread_id)
     log_step(f"Email D0 HTML enviado por Gmail. message_id={email_result.get('id')} thread_id={thread_id}")
 
     log_step("Iniciando listener Gmail: polling cada 15 segundos esperando reply unread en el thread.")
-    state = wait_for_reply_and_classify(thread_id=thread_id, brand_data=brand, poll_seconds=15)
+    state = wait_for_reply_and_classify(
+        thread_id=thread_id,
+        brand_data=brand,
+        poll_seconds=15,
+        after_epoch_ms=sent_after_epoch_ms,
+    )
     reply_text = state.get("reply_recibido") or ""
     classification = state.get("clasificacion") or {}
     decision = state.get("decision")
