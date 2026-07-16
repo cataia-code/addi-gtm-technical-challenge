@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.agents.graph import build_graph, run_local
+from src.agents.graph import build_graph  # noqa: E402
 
 
 def load_brand(brand_id: str) -> dict:
@@ -30,18 +30,21 @@ def load_brand(brand_id: str) -> dict:
 def run_demo(brand_id: str, reply: str | None = None, dry_run: bool = True) -> dict:
     brand = load_brand(brand_id)
     state = {
-        "brand_actual": brand,
+        "brand_data": brand,
         "tier": brand["tier"],
+        "ya_contactado": False,
         "reply_recibido": reply,
+        "clasificacion": None,
+        "decision": "",
         "dry_run": dry_run,
-        "email_destino": os.environ.get("DEMO_EMAIL_DESTINO"),
-        "whatsapp_destino": os.environ.get("DEMO_WHATSAPP_NUMBER"),
         "log_razonamiento": [],
     }
+    if os.environ.get("DEMO_EMAIL_DESTINO"):
+        brand["contacto_email"] = os.environ["DEMO_EMAIL_DESTINO"]
+    if os.environ.get("DEMO_WHATSAPP_NUMBER"):
+        brand["contacto_whatsapp"] = os.environ["DEMO_WHATSAPP_NUMBER"]
     graph = build_graph()
-    if graph is not None:
-        return graph.invoke(state)
-    return run_local(state)
+    return graph.invoke(state)
 
 
 if __name__ == "__main__":

@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from live_demo.email_listener import wait_for_reply_and_classify
-from src.db import repository
-from src.outreach.email_service import send_email_d0
+from live_demo.email_listener import wait_for_reply_and_classify  # noqa: E402
+from src.db import repository  # noqa: E402
+from src.outreach.email_service import send_email_d0  # noqa: E402
 
 
 REPORT_PATH = ROOT / "tests" / "test_e2e_real.md"
@@ -26,6 +26,7 @@ DEFAULT_TIER = os.environ.get("DEMO_TIER", "B")
 
 
 def main() -> None:
+    # Paso 0: cargar credenciales locales. El archivo .env esta ignorado por git.
     load_env()
     require_env(
         "DEMO_EMAIL_DESTINO",
@@ -40,7 +41,12 @@ def main() -> None:
     reset_report()
     log_step("Inicio E2E real controlado desde analysis/top50.csv.")
 
+    # Paso 1: leer el ranking oficial desde analysis/top50.csv.
+    # Si DEMO_BRAND_ID no esta definido, se toma el mejor Tier B por score.
     brand = load_demo_brand()
+
+    # Paso 2: persistir el lead de demo y registrar opt-in para que el gate
+    # de WhatsApp del agente permita enviar solo en la rama "agendar".
     repository.upsert_lead(
         brand["brand_id"],
         category=brand.get("category"),
@@ -52,6 +58,8 @@ def main() -> None:
     repository.grant_opt_in(brand["brand_id"], "whatsapp")
     log_step("Lead insertado en SQLite y opt_in WhatsApp registrado.")
 
+    # Paso 3: enviar email D0 real por Gmail con plantilla HTML.
+    # Guardamos este timestamp para que el listener ignore mensajes viejos.
     sent_after_epoch_ms = int(time.time() * 1000)
     email_result = send_email_d0(
         brand,
@@ -64,6 +72,8 @@ def main() -> None:
     repository.mark_contacted(brand["brand_id"], thread_id=thread_id)
     log_step(f"Email D0 HTML enviado por Gmail. message_id={email_result.get('id')} thread_id={thread_id}")
 
+    # Paso 4: esperar respuesta real en el mismo thread.
+    # Importante: process_with_langgraph=True obliga a ejecutar compiled_reply_graph.
     log_step("Iniciando listener Gmail: polling cada 15 segundos esperando reply unread en el thread.")
     state = wait_for_reply_and_classify(
         thread_id=thread_id,
@@ -74,7 +84,10 @@ def main() -> None:
         process_with_langgraph=True,
         dry_run=False,
     )
-    reply_text = state.get("reply_recibido") or ""
+
+    # Paso 5: el estado devuelto ya paso por nodos LangGraph:
+    # nodo_clasificar_reply -> nodo_router -> nodo_enviar_whatsapp_agendar
+    # o nodo_handoff_nurture/nodo_handoff_descarte segun suggested_action.
     classification = state.get("clasificacion") or {}
     decision = state.get("decision")
     whatsapp_result = state.get("whatsapp_result") or {}

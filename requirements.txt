@@ -18,3 +18,4 @@ twilio>=9.0.0
 apify-client>=1.7.0
 pytest>=8.0.0
 coverage>=7.5.0
+ruff>=0.6.0

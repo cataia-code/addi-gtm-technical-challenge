@@ -23,10 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.agents.nodes import nodo_clasificar_reply, nodo_router
-from src.agents.state import GTMState
-from src.db import repository
-from src.handoff.slack_service import post_handoff
+from src.agents.nodes import nodo_clasificar_reply, nodo_router  # noqa: E402
+from src.agents.state import GTMState  # noqa: E402
+from src.db.models import connect  # noqa: E402
+from src.handoff.slack_service import post_handoff  # noqa: E402
 
 BRAND_ID = os.environ.get("DEMO_BRAND_ID", "Brand_0145")
 
@@ -105,7 +105,7 @@ class TwilioWhatsAppHandler(BaseHTTPRequestHandler):
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8787) -> None:
-    repository.init_db()
+    connect().close()
     server = HTTPServer((host, port), TwilioWhatsAppHandler)
     print(f"Twilio WhatsApp listener running on http://{host}:{port}/twilio/whatsapp")
     server.serve_forever()

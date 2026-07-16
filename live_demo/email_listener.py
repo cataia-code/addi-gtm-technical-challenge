@@ -49,6 +49,11 @@ def wait_for_reply_and_classify(
             if process_with_langgraph:
                 from src.agents.graph import compiled_reply_graph
 
+                # Ruta real del agente:
+                # 1. clasifica el reply con Groq,
+                # 2. enruta por suggested_action,
+                # 3. aplica gates de opt-in/opt-out,
+                # 4. envia WhatsApp y/o Slack desde los nodos correspondientes.
                 return compiled_reply_graph.invoke(state)
             nodo_clasificar_reply(state)
             nodo_router(state)
@@ -66,7 +71,7 @@ def _find_unread_message_in_thread(
 ) -> dict[str, Any] | None:
     """Try Gmail search first, then fall back to threads.get."""
 
-    query = f"is:unread -from:me"
+    query = "is:unread -from:me"
     try:
         listed = service.users().messages().list(userId="me", q=query).execute()
         for item in listed.get("messages", []):

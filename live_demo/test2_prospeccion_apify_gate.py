@@ -16,20 +16,22 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.agents.prospecting_graph import compiled_prospecting_graph
-from src.enrichment.apify_apollo_scraper import hogar_colombia_input
+from src.agents.prospecting_graph import compiled_prospecting_graph  # noqa: E402
+from src.enrichment.apify_apollo_scraper import hogar_colombia_input  # noqa: E402
 
 
 REPORT_PATH = ROOT / "tests" / "test2_prospeccion_apify_gate.md"
 
 
 def main() -> None:
+    # Paso 0: cargar secretos locales ignorados por git.
     load_env()
     parser = argparse.ArgumentParser()
     parser.add_argument("--confirm-run", action="store_true", help="Actually call Apify and Groq.")
     parser.add_argument("--max-results", type=int, default=3)
     args = parser.parse_args()
 
+    # Paso 1: construir el input de Apify y mostrarlo antes de gastar la llamada.
     run_input = hogar_colombia_input()
     print("INPUT_APIFY_CONFIRMAR_ANTES_DE_EJECUTAR:")
     print(json.dumps(run_input, ensure_ascii=False, indent=2))
@@ -37,8 +39,14 @@ def main() -> None:
         print("No se ejecuto Apify. Reejecuta con --confirm-run para gastar UNA llamada real.")
         return
 
+    # Paso 2: validar credenciales solo cuando el usuario confirma la corrida real.
     require_env("APIFY_API_TOKEN", "GROQ_API_KEY")
     reset_report(run_input)
+
+    # Paso 3: ejecutar el grafo LangGraph completo:
+    # Apify -> validacion de campos -> deduplicacion SQLite -> perfil Groq
+    # -> borrador Groq -> Excel en data/ -> memoria local.
+    # Este script no importa servicios de email, WhatsApp ni Slack.
     state = compiled_prospecting_graph.invoke(
         {
             "run_input": run_input,
