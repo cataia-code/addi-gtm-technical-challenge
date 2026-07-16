@@ -1,6 +1,6 @@
 # Addi GTM Technical Challenge
 
-[![CI](https://github.com/cataia-code/addi-gtm-technical-challenge/actions/workflows/ci.yml/badge.svg)](https://github.com/cataia-code/addi-gtm-technical-challenge/actions/workflows/ci.yml)
+CI/CD: https://github.com/cataia-code/addi-gtm-technical-challenge/actions
 
 Proyecto GTM con scoring validado, agentes LangGraph, demos reales controladas y memoria local en SQLite dentro de `data/`.
 
