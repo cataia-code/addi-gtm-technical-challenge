@@ -129,3 +129,48 @@ def has_opt_in(brand_id: str, canal: str) -> bool:
     ).fetchone()
     conn.close()
     return row is not None
+
+
+def prospect_exists(*, contact_email: str | None, contact_phone: str | None = None, linkedin_url: str | None = None) -> bool:
+    conn = connect()
+    row = conn.execute(
+        """
+        SELECT 1
+        FROM prospect_consultations
+        WHERE (contact_email IS NOT NULL AND contact_email = ?)
+           OR (contact_phone IS NOT NULL AND contact_phone = ?)
+           OR (linkedin_url IS NOT NULL AND linkedin_url = ?)
+        LIMIT 1
+        """,
+        (contact_email, contact_phone, linkedin_url),
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+
+def save_prospect_consultation(prospect: dict[str, Any]) -> None:
+    conn = connect()
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO prospect_consultations (
+            company_name, domain, industry, country, city, contact_name,
+            contact_title, contact_email, contact_phone, linkedin_url, consulted_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            prospect.get("name"),
+            prospect.get("domain"),
+            prospect.get("industry"),
+            prospect.get("country"),
+            prospect.get("city"),
+            prospect.get("contact_name"),
+            prospect.get("contact_title"),
+            prospect.get("contact_email"),
+            prospect.get("contact_phone"),
+            prospect.get("linkedin_url"),
+            utc_now_iso(),
+        ),
+    )
+    conn.commit()
+    conn.close()

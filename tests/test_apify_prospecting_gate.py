@@ -49,7 +49,12 @@ class ApifyProspectingGateTest(unittest.TestCase):
             elif isinstance(node, ast.ImportFrom):
                 imports.append(node.module or "")
 
-        forbidden = {"src.outreach.email_service", "src.outreach.whatsapp_service"}
+        forbidden = {
+            "src.outreach.email_service",
+            "src.outreach.whatsapp_service",
+            "src.handoff.slack_service",
+            "requests",
+        }
         self.assertTrue(forbidden.isdisjoint(set(imports)))
 
 

@@ -35,6 +35,21 @@ CREATE TABLE IF NOT EXISTS opt_ins (
     canal TEXT,
     otorgado_en TEXT
 );
+
+CREATE TABLE IF NOT EXISTS prospect_consultations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_name TEXT,
+    domain TEXT,
+    industry TEXT,
+    country TEXT,
+    city TEXT,
+    contact_name TEXT,
+    contact_title TEXT,
+    contact_email TEXT UNIQUE,
+    contact_phone TEXT,
+    linkedin_url TEXT,
+    consulted_at TEXT
+);
 """
 
 
@@ -45,4 +60,3 @@ def connect(db_path: Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
     conn.executescript(SCHEMA)
     conn.commit()
     return conn
-
