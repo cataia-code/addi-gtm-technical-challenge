@@ -1,4 +1,4 @@
-"""Repository helpers for the local demo database."""
+"""Repository helpers for the local agent memory database."""
 
 from __future__ import annotations
 
@@ -92,6 +92,14 @@ def save_reply(brand_id: str, reply_text: str, classification: dict | None = Non
     )
     conn.commit()
     conn.close()
+    save_agent_interaction(
+        run_id=brand_id,
+        source="email_listener",
+        event_type="reply_guardado",
+        brand_id=brand_id,
+        content=reply_text,
+        metadata=classification or {},
+    )
 
 
 def list_replies(brand_id: str) -> list[dict[str, Any]]:
@@ -174,3 +182,88 @@ def save_prospect_consultation(prospect: dict[str, Any]) -> None:
     )
     conn.commit()
     conn.close()
+    save_agent_interaction(
+        run_id=str(prospect.get("contact_email") or prospect.get("domain") or prospect.get("name")),
+        source="prospecting_graph",
+        event_type="prospecto_exportado",
+        prospect_email=prospect.get("contact_email"),
+        content=prospect.get("draft_email") or prospect.get("profile") or "",
+        metadata=prospect,
+    )
+
+
+def save_agent_interaction(
+    *,
+    run_id: str,
+    source: str,
+    event_type: str,
+    content: str,
+    metadata: dict[str, Any] | None = None,
+    brand_id: str | None = None,
+    prospect_email: str | None = None,
+) -> None:
+    """Guarda una interaccion del agente para auditoria y busqueda tipo RAG."""
+    metadata = metadata or {}
+    embedding_text = " | ".join(
+        str(value)
+        for value in [
+            run_id,
+            source,
+            event_type,
+            brand_id,
+            prospect_email,
+            content,
+            json.dumps(metadata, ensure_ascii=False, sort_keys=True),
+        ]
+        if value
+    )
+    conn = connect()
+    conn.execute(
+        """
+        INSERT INTO agent_interactions (
+            run_id, source, event_type, brand_id, prospect_email,
+            content, metadata_json, embedding_text, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            run_id,
+            source,
+            event_type,
+            brand_id,
+            prospect_email,
+            content,
+            json.dumps(metadata, ensure_ascii=False),
+            embedding_text,
+            utc_now_iso(),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def list_agent_interactions(limit: int = 50) -> list[dict[str, Any]]:
+    conn = connect()
+    rows = conn.execute(
+        "SELECT * FROM agent_interactions ORDER BY created_at DESC, id DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def search_agent_interactions(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Busqueda local simple sobre la memoria; queda lista para cambiar a vectores."""
+    like_query = f"%{query}%"
+    conn = connect()
+    rows = conn.execute(
+        """
+        SELECT * FROM agent_interactions
+        WHERE embedding_text LIKE ?
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+        """,
+        (like_query, limit),
+    ).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]

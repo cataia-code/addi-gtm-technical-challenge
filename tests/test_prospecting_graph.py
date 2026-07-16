@@ -30,13 +30,16 @@ class ProspectingGraphTest(unittest.TestCase):
             "src.agents.prospecting_nodes.synthesize_company_profile", return_value="Perfil breve."
         ), patch("src.agents.prospecting_nodes.draft_outreach_email", return_value="Borrador email."), patch(
             "src.agents.prospecting_nodes.repository.save_prospect_consultation"
-        ) as save_prospect, patch("src.agents.prospecting_nodes.ROOT", Path(tmpdir)):
+        ) as save_prospect, patch(
+            "src.agents.prospecting_nodes.repository.save_agent_interaction"
+        ) as save_interaction, patch("src.agents.prospecting_nodes.ROOT", Path(tmpdir)):
             result = graph.invoke({"run_input": {"totalResults": 1}, "max_results": 1, "log": []})
 
         self.assertEqual(len(result["enriched_rows"]), 1)
         self.assertTrue(result["output_path"].endswith("data\\test2_prospectos_apify.xlsx") or result["output_path"].endswith("data/test2_prospectos_apify.xlsx"))
         self.assertIn("campos completos", "\n".join(result["log"]))
         save_prospect.assert_called_once()
+        save_interaction.assert_called_once()
 
 
 if __name__ == "__main__":

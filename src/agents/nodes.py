@@ -26,6 +26,14 @@ def nodo_brief_hunter(state: GTMState) -> GTMState:
         "reasoning": "Tier A: cuenta de alto valor, requiere revisión manual antes de contactar.",
     }
     post_handoff(brand, classification, brief, state["log_razonamiento"])
+    repository.save_agent_interaction(
+        run_id=brand.get("brand_id", "tier_a"),
+        source="langgraph",
+        event_type="brief_hunter",
+        brand_id=brand.get("brand_id"),
+        content=brief,
+        metadata={"classification": classification, "log": state["log_razonamiento"]},
+    )
     state["decision"] = "brief_hunter"
     append_log(state, "nodo_brief_hunter: Tier A detectado; brief enviado/preparado en Slack.")
     append_log(state, "nodo_brief_hunter: no hay outreach automático para Tier A.")
@@ -57,6 +65,14 @@ def nodo_enviar_email(state: GTMState) -> GTMState:
         thread_id=str(thread_id) if thread_id else None,
     )
     repository.mark_contacted(brand["brand_id"], thread_id=str(thread_id) if thread_id else None)
+    repository.save_agent_interaction(
+        run_id=brand["brand_id"],
+        source="langgraph",
+        event_type="email_d0_enviado",
+        brand_id=brand["brand_id"],
+        content=f"Email D0 a {to_email}",
+        metadata={"thread_id": str(thread_id) if thread_id else None, "brand": brand},
+    )
     append_log(state, f"nodo_enviar_email: email D0 preparado/enviado a {to_email}; contactado_en marcado en SQLite.")
     return state
 
@@ -85,6 +101,14 @@ def nodo_clasificar_reply(state: GTMState) -> GTMState:
     state["clasificacion"] = classification
     state["decision"] = classification["suggested_action"]
     repository.save_reply(state["brand_data"]["brand_id"], reply, classification)
+    repository.save_agent_interaction(
+        run_id=state["brand_data"]["brand_id"],
+        source="langgraph",
+        event_type="reply_clasificado",
+        brand_id=state["brand_data"]["brand_id"],
+        content=reply,
+        metadata=classification,
+    )
     append_log(
         state,
         f"nodo_clasificar_reply: suggested_action={state['decision']} | {classification.get('reasoning', '')}",
@@ -115,6 +139,14 @@ def nodo_handoff_agendar(state: GTMState) -> GTMState:
         timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_agendar: handoff Hunter preparado en Slack; SLA sugerido <24h.")
+    repository.save_agent_interaction(
+        run_id=state["brand_data"]["brand_id"],
+        source="langgraph",
+        event_type="handoff_agendar",
+        brand_id=state["brand_data"]["brand_id"],
+        content=state.get("reply_recibido") or "",
+        metadata={"classification": state.get("clasificacion"), "whatsapp_result": state.get("whatsapp_result")},
+    )
     return state
 
 
@@ -129,6 +161,14 @@ def nodo_handoff_nurture(state: GTMState) -> GTMState:
         timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_nurture: lead queda en nurture; no se genera WhatsApp.")
+    repository.save_agent_interaction(
+        run_id=state["brand_data"]["brand_id"],
+        source="langgraph",
+        event_type="handoff_nurture",
+        brand_id=state["brand_data"]["brand_id"],
+        content=state.get("reply_recibido") or "",
+        metadata={"classification": state.get("clasificacion")},
+    )
     return state
 
 
@@ -149,6 +189,14 @@ def nodo_handoff_descarte(state: GTMState) -> GTMState:
         timestamp=datetime.now().isoformat(timespec="seconds"),
     )
     append_log(state, "nodo_handoff_descarte: descarte documentado en Slack.")
+    repository.save_agent_interaction(
+        run_id=state["brand_data"]["brand_id"],
+        source="langgraph",
+        event_type="handoff_descarte",
+        brand_id=state["brand_data"]["brand_id"],
+        content=state.get("reply_recibido") or "",
+        metadata={"classification": classification},
+    )
     return state
 
 
@@ -209,6 +257,14 @@ def nodo_enviar_whatsapp_agendar(state: GTMState) -> GTMState:
     append_log(
         state,
         f"nodo_enviar_whatsapp_agendar: WhatsApp status={state['whatsapp_result']['status']} sid={state['whatsapp_result'].get('sid')}",
+    )
+    repository.save_agent_interaction(
+        run_id=brand["brand_id"],
+        source="langgraph",
+        event_type="whatsapp_agendar",
+        brand_id=brand["brand_id"],
+        content=body,
+        metadata=state["whatsapp_result"],
     )
     return state
 

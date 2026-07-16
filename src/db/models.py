@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DB_PATH = ROOT / "live_demo" / "gtm_demo.sqlite3"
+DEFAULT_DB_PATH = ROOT / "data" / "agent_memory.sqlite3"
 
 
 SCHEMA = """
@@ -49,6 +49,19 @@ CREATE TABLE IF NOT EXISTS prospect_consultations (
     contact_phone TEXT,
     linkedin_url TEXT,
     consulted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS agent_interactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT,
+    source TEXT,
+    event_type TEXT,
+    brand_id TEXT,
+    prospect_email TEXT,
+    content TEXT,
+    metadata_json TEXT,
+    embedding_text TEXT,
+    created_at TEXT
 );
 """
 

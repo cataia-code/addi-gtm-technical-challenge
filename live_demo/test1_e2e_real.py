@@ -1,4 +1,4 @@
-"""Live E2E test: Brand_0145 email -> reply -> Groq -> WhatsApp/Slack."""
+"""Live E2E test: scored lead -> email -> reply -> Groq -> WhatsApp/Slack."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from src.outreach.email_service import send_email_d0
 
 
 REPORT_PATH = ROOT / "tests" / "test_e2e_real.md"
-BRAND_ID = "Brand_0145"
+DEFAULT_TIER = os.environ.get("DEMO_TIER", "B")
 
 
 def main() -> None:
@@ -38,9 +38,9 @@ def main() -> None:
     )
 
     reset_report()
-    log_step("Inicio E2E real controlado Brand_0145.")
+    log_step("Inicio E2E real controlado desde analysis/top50.csv.")
 
-    brand = load_brand_0145()
+    brand = load_demo_brand()
     repository.upsert_lead(
         brand["brand_id"],
         category=brand.get("category"),
@@ -104,11 +104,18 @@ def require_env(*keys: str) -> None:
         raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
 
 
-def load_brand_0145() -> dict[str, Any]:
+def load_demo_brand() -> dict[str, Any]:
     top50 = pd.read_csv(ROOT / "analysis" / "top50.csv")
-    row = top50[top50["brand_id"].eq(BRAND_ID)]
+    brand_id = os.environ.get("DEMO_BRAND_ID")
+    if brand_id:
+        row = top50[top50["brand_id"].eq(brand_id)]
+    else:
+        tier_rows = top50[top50["tier"].eq(DEFAULT_TIER)].copy()
+        if tier_rows.empty:
+            raise RuntimeError(f"No rows found for DEMO_TIER={DEFAULT_TIER} in analysis/top50.csv")
+        row = tier_rows.sort_values(["final_score", "gmv_cop_millions_12m"], ascending=False).head(1)
     if row.empty:
-        raise RuntimeError(f"{BRAND_ID} not found in analysis/top50.csv")
+        raise RuntimeError(f"DEMO_BRAND_ID={brand_id} not found in analysis/top50.csv")
     brand = row.iloc[0].dropna().to_dict()
     brand["contacto_email"] = os.environ["DEMO_EMAIL_DESTINO"]
     brand["contacto_whatsapp"] = os.environ["DEMO_WHATSAPP_NUMBER"]

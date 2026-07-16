@@ -93,11 +93,11 @@ def run_apollo_organizations_scraper(
 def normalize_company(item: dict[str, Any]) -> CompanyProspect:
     organization = item.get("organization") if isinstance(item.get("organization"), dict) else {}
     company = item.get("company") if isinstance(item.get("company"), dict) else {}
-    name = first_present(item, organization, company, keys=("companyName", "company_name", "organization_name", "name"))
-    domain = first_present(item, organization, company, keys=("companyDomain", "domain", "website_url", "website", "primary_domain"))
-    industry = first_present(item, organization, company, keys=("companyIndustry", "industry", "industry_name", "industries"))
-    country = first_present(item, organization, company, keys=("companyCountry", "country", "country_name", "organization_country"))
-    city = first_present(item, organization, company, keys=("companyCity", "city", "organization_city"))
+    name = first_present(organization, company, item, keys=("companyName", "company_name", "organization_name", "name"))
+    domain = first_present(organization, company, item, keys=("companyDomain", "domain", "website_url", "website", "primary_domain"))
+    industry = first_present(organization, company, item, keys=("companyIndustry", "industry", "industry_name", "industries"))
+    country = first_present(organization, company, item, keys=("companyCountry", "country", "country_name", "organization_country"))
+    city = first_present(organization, company, item, keys=("companyCity", "city", "organization_city"))
     contact_name = first_present(item, keys=("name", "personName", "fullName", "person_name"))
     contact_title = first_present(item, keys=("title", "personTitle", "jobTitle", "person_title"))
     contact_email = first_present(item, keys=("email", "workEmail", "businessEmail", "personEmail"))

@@ -92,4 +92,11 @@ def nodo_exportar_excel_y_registrar_db(state: ProspectingState) -> ProspectingSt
     state["output_path"] = str(output_path)
     append_log(state, f"nodo_exportar_excel_y_registrar_db: Excel guardado en {output_path}.")
     append_log(state, f"nodo_exportar_excel_y_registrar_db: {len(rows)} leads registrados en SQLite.")
+    repository.save_agent_interaction(
+        run_id="test2_prospeccion_apify",
+        source="prospecting_graph",
+        event_type="excel_prospectos_generado",
+        content=str(output_path),
+        metadata={"rows": len(rows), "output_path": str(output_path)},
+    )
     return state

@@ -1,7 +1,6 @@
 # Secretos y credenciales (NUNCA deben subir a git)
 .env
 .env.*
-!.env.example
 credentials.json
 token.json
 token.backup_*.json
@@ -42,6 +41,8 @@ env/
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
