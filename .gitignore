@@ -1,4 +1,4 @@
-# Secrets and credentials
+# Secretos y credenciales (NUNCA deben subir a git)
 .env
 .env.*
 !.env.example
@@ -8,16 +8,32 @@ token.backup_*.json
 *.pem
 *.key
 
-# Local databases and runtime state
+# Bases de datos locales
 *.db
 *.sqlite
 *.sqlite3
+
+# Runtime/legacy local
+.claude/
+.agents/
 .n8n_data/
+deliverables/
+docs/
 live_demo/state/
 tests/contact_log.json
 
+# Reportes/artefactos legacy que no pertenecen al flujo final
+CLAUDE.md
+DEMO_FINAL_REPORT.md
+FINAL_REPORT.txt
+PROJECT_STATE.md
+RUBRIC_CHECKLIST.md
+business_case.md
+Business_Case__GTM_Engineer_Marketplace*.pdf
+
 # Python
 __pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 .venv/
@@ -30,9 +46,8 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
-# OS and editors
+# Sistema operativo / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-.claude/settings.local.json
